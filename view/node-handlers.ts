@@ -1,0 +1,49 @@
+/**
+ * Node type handlers — translate static scene nodes into
+ * RenderObjectParams for the Renderer interface.
+ */
+
+import type { SceneNode } from "../engine/scene/node.js";
+import type { RenderObjectParams } from "./renderer.js";
+
+export type NodeHandler = (node: SceneNode) => RenderObjectParams | null;
+
+const handlers = new Map<string, NodeHandler>();
+
+export function registerNodeHandler(nodeType: string, handler: NodeHandler): void {
+  handlers.set(nodeType, handler);
+}
+
+export function handleNode(node: SceneNode): RenderObjectParams | null {
+  const handler = handlers.get(node.type);
+  if (!handler) return null;
+  return handler(node);
+}
+
+// Built-in handlers
+
+registerNodeHandler("mesh", (node): RenderObjectParams => ({
+  type: "mesh",
+  geometryRef: node.data.geometry as string | undefined,
+  color: node.data.color as number | undefined,
+  roughness: node.data.roughness as number | undefined,
+  metalness: node.data.metalness as number | undefined,
+}));
+
+registerNodeHandler("light", (node): RenderObjectParams => ({
+  type: "light",
+  lightType: (node.data.lightType as "point" | "directional" | "spot" | "ambient") ?? "point",
+  color: node.data.color as number | undefined,
+  intensity: node.data.intensity as number | undefined,
+  range: node.data.range as number | undefined,
+  angle: node.data.angle as number | undefined,
+}));
+
+registerNodeHandler("camera", (node): RenderObjectParams => ({
+  type: "camera",
+  projection: (node.data.projection as "perspective" | "orthographic") ?? "perspective",
+  fov: node.data.fov as number | undefined,
+  near: node.data.near as number | undefined,
+  far: node.data.far as number | undefined,
+  zoom: node.data.zoom as number | undefined,
+}));

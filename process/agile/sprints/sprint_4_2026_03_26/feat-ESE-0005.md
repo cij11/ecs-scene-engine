@@ -1,5 +1,5 @@
 ## Status
-refining
+done
 
 ## Title
 feat-ESE-0005: Create view architecture
@@ -50,11 +50,11 @@ Sum of subtasks (9)
 - feat-ESE-0005-07: Export view public API (1pt)
 
 ## Team
-
+unknown
 ## Started
-
+2026-03-26T07:52:58.811Z
 ## Completed
-
+2026-03-26T08:00:28.466Z
 ## Blockers
 - feat-ESE-0003 (needs ECS core — done)
 

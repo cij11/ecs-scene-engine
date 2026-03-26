@@ -6,12 +6,12 @@
   <title>ECS Scene Engine</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #111; display: flex; align-items: center; justify-content: center; height: 100vh; }
-    canvas { display: block; }
+    body { background: #111; overflow: hidden; }
+    #game { width: 100vw; height: 100vh; }
   </style>
 </head>
 <body>
-  <canvas id="game"></canvas>
+  <div id="game"></div>
   <script type="module" src="./main.ts"></script>
 </body>
 </html>
