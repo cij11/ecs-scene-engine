@@ -1,0 +1,34 @@
+{
+  "name": "ecs-scene-engine",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lock": "npx tsx tooling/lock/lock.ts",
+    "unlock": "npx tsx tooling/lock/unlock.ts",
+    "init-locks": "npx tsx tooling/lock/init-locks.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cij11/ecs-scene-engine.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cij11/ecs-scene-engine/issues"
+  },
+  "homepage": "https://github.com/cij11/ecs-scene-engine#readme",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
