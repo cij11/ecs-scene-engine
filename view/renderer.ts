@@ -18,30 +18,30 @@ export type CameraProjection = "perspective" | "orthographic";
 /** Parameters for creating a mesh object */
 export interface MeshParams {
   type: "mesh";
-  geometryRef?: string;
-  color?: number;
-  roughness?: number;
-  metalness?: number;
+  geometryRef?: string | undefined;
+  color?: number | undefined;
+  roughness?: number | undefined;
+  metalness?: number | undefined;
 }
 
 /** Parameters for creating a light object */
 export interface LightParams {
   type: "light";
   lightType: LightType;
-  color?: number;
-  intensity?: number;
-  range?: number;
-  angle?: number;
+  color?: number | undefined;
+  intensity?: number | undefined;
+  range?: number | undefined;
+  angle?: number | undefined;
 }
 
 /** Parameters for creating a camera object */
 export interface CameraParams {
   type: "camera";
   projection: CameraProjection;
-  fov?: number;
-  near?: number;
-  far?: number;
-  zoom?: number;
+  fov?: number | undefined;
+  near?: number | undefined;
+  far?: number | undefined;
+  zoom?: number | undefined;
 }
 
 export type RenderObjectParams = MeshParams | LightParams | CameraParams;

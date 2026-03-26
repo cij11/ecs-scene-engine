@@ -27,7 +27,11 @@ export function addChildWorld(
   child: WorldNode,
   parentEntityIndex?: number,
 ): void {
-  child.parentEntityIndex = parentEntityIndex;
+  if (parentEntityIndex !== undefined) {
+    child.parentEntityIndex = parentEntityIndex;
+  } else {
+    delete child.parentEntityIndex;
+  }
   parent.children.push(child);
 }
 

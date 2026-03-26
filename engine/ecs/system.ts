@@ -9,7 +9,8 @@ export const PHASES = ["preUpdate", "update", "postUpdate", "preRender", "cleanu
 
 export type Phase = (typeof PHASES)[number];
 
-export type SystemFn = (world: object, dt: number) => void;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type SystemFn = (world: any, dt: number) => void;
 
 export interface Pipeline {
   phases: Record<Phase, SystemFn[]>;

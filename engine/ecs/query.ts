@@ -195,7 +195,7 @@ export function createQueryRegistry(
     parsed: new Map(),
     componentToQueries: new Map(),
     bitmasks,
-    aliveEntities,
+    aliveEntities: aliveEntities ?? (() => []),
   };
 }
 

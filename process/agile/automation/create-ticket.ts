@@ -75,6 +75,8 @@ ${fullName}: ${title}
 
 ## Acceptance Criteria
 
+## Demo Deliverable
+
 ## Testing Scenarios
 
 ## Testing Notes

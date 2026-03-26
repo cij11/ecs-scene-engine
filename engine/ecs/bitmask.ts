@@ -69,7 +69,8 @@ export function addComponentBit(
 ): void {
   const mask = registry.masks.get(def.id);
   if (!mask) return;
-  registry.entityMasks[mask.generationId]![entityIndex] |= mask.bitflag;
+  const addRow = registry.entityMasks[mask.generationId]!;
+  addRow[entityIndex] = (addRow[entityIndex] ?? 0) | mask.bitflag;
 }
 
 export function removeComponentBit(
@@ -79,7 +80,8 @@ export function removeComponentBit(
 ): void {
   const mask = registry.masks.get(def.id);
   if (!mask) return;
-  registry.entityMasks[mask.generationId]![entityIndex] &= ~mask.bitflag;
+  const removeRow = registry.entityMasks[mask.generationId]!;
+  removeRow[entityIndex] = (removeRow[entityIndex] ?? 0) & ~mask.bitflag;
 }
 
 export function hasComponentBit(
