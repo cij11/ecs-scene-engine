@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ls process/collaboration/locks/ 2>/dev/null | grep -v locks.md | head -5 | while read f; do echo \"ACTIVE LOCK: $(cat process/collaboration/locks/$f)\" >&2; done; echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"Reminder: Check process/collaboration/locks/ for active locks. Files covered by a lock may change while you read them.\"}}'",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ls process/collaboration/locks/ 2>/dev/null | grep -v locks.md | head -5 | while read f; do echo \"ACTIVE LOCK: $(cat process/collaboration/locks/$f)\" >&2; done; echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"Reminder: Before writing, check process/collaboration/locks/ for conflicts. You must add a lock file before writing and remove it when done. See process/collaboration/collaboration.md for the format.\"}}'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
-bitecs
-harmony-ecs
-godot
-spelunky-classic
-Beyond-All-Reason
-spring
-colyseus
+bitecs https://github.com/NateTheGreatt/bitECS.git
+harmony-ecs https://github.com/3mcd/harmony-ecs.git
+godot https://github.com/godotengine/godot.git
+spelunky-classic https://github.com/yancharkin/SpelunkyClassicHD.git
+Beyond-All-Reason https://github.com/beyond-all-reason/Beyond-All-Reason.git
+spring https://github.com/spring/spring.git
+colyseus https://github.com/colyseus/colyseus.git

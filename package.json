@@ -7,10 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lock": "npx tsx tooling/lock/lock.ts",
-    "unlock": "npx tsx tooling/lock/unlock.ts",
-    "init-locks": "npx tsx tooling/lock/init-locks.ts"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
