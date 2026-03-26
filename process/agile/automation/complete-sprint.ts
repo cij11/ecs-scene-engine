@@ -26,37 +26,34 @@ if (!fs.existsSync(sprintDir)) {
 
 const errors: string[] = [];
 
-// Gate 1: Demo folder must exist with demo.md
+// Gate 1: Demo folder must exist with demo-expected.json and demo-actual.json
 const demoDir = path.join(sprintDir, "demo");
-const demoDoc = path.join(demoDir, "demo.md");
 if (!fs.existsSync(demoDir)) {
   errors.push("Missing demo/ folder — a demo must be prepared before closing the sprint");
 }
-if (!fs.existsSync(demoDoc)) {
-  errors.push("Missing demo/demo.md — demo documentation is required");
-}
-
-// Gate 2: Demo must be accepted by stakeholder
-if (fs.existsSync(demoDoc)) {
-  const demoContent = fs.readFileSync(demoDoc, "utf-8");
-  if (!demoContent.toLowerCase().includes("accepted")) {
-    errors.push("Demo has not been accepted by stakeholder — demo.md must contain acceptance confirmation");
+if (fs.existsSync(demoDir)) {
+  if (!fs.existsSync(path.join(demoDir, "demo-expected.json"))) {
+    errors.push("Missing demo/demo-expected.json");
+  }
+  if (!fs.existsSync(path.join(demoDir, "demo-actual.json"))) {
+    errors.push("Missing demo/demo-actual.json");
   }
 }
 
-// Gate 3: Check parent tickets for Demo Accepted field
-const allTickets = fs.readdirSync(sprintDir).filter(f => f.match(/^(?:feat|bugfix|task)-ESE-\d{4}\.md$/));
-let hasAcceptedDemo = false;
-for (const file of allTickets) {
-  const content = fs.readFileSync(path.join(sprintDir, file), "utf-8");
-  const demoField = content.match(/^## Demo Accepted\n(.+)$/m);
-  if (demoField?.[1]?.trim().toLowerCase().startsWith("accepted")) {
-    hasAcceptedDemo = true;
-    break;
+// Gate 2: Check ticketStatus.json for demoAccepted on feat tickets
+const TICKET_STATUS_PATH = path.join(SPRINTS_DIR, "ticketStatus.json");
+if (fs.existsSync(TICKET_STATUS_PATH)) {
+  const statusData = JSON.parse(fs.readFileSync(TICKET_STATUS_PATH, "utf-8"));
+  const sprintFeatTickets = statusData.tickets.filter(
+    (t: { filename: string; demoAccepted?: boolean }) =>
+      t.filename.startsWith(sprintName + "/") && t.filename.includes("feat-"),
+  );
+  for (const t of sprintFeatTickets) {
+    if (t.demoAccepted !== true) {
+      const name = t.filename.split("/").pop()?.replace(".md", "");
+      errors.push(`${name}: demoAccepted is not true — run 'npm run ticket:accept -- ${name}'`);
+    }
   }
-}
-if (!hasAcceptedDemo) {
-  errors.push("No ticket has 'Demo Accepted' marked as accepted by the stakeholder");
 }
 
 // Gate 4: Read tickets and validate
@@ -75,7 +72,7 @@ for (const file of files) {
   const content = fs.readFileSync(path.join(sprintDir, file), "utf-8");
   const ticketName = file.replace(".md", "");
 
-  const sizeMatch = content.match(/^## Size\n(.+)$/m);
+  const sizeMatch = content.match(/^## Size\n\n?(.+)$/m);
   const val = sizeMatch?.[1]?.trim();
 
   // Skip parent tickets (points come from subtasks)
@@ -90,7 +87,7 @@ for (const file of files) {
   totalCount++;
   totalPoints += points;
 
-  const statusMatch = content.match(/^## Status\n(.+)$/m);
+  const statusMatch = content.match(/^## Status\n\n?(.+)$/m);
   const status = statusMatch?.[1]?.trim();
 
   if (status === "done") {
@@ -101,8 +98,8 @@ for (const file of files) {
   }
 
   // Calculate hours from Started/Completed timestamps
-  const startedMatch = content.match(/^## Started\n(.+)$/m);
-  const completedMatch = content.match(/^## Completed\n(.+)$/m);
+  const startedMatch = content.match(/^## Started\n\n?(.+)$/m);
+  const completedMatch = content.match(/^## Completed\n\n?(.+)$/m);
 
   if (startedMatch?.[1]?.trim() && completedMatch?.[1]?.trim()) {
     const started = new Date(startedMatch[1]!.trim());

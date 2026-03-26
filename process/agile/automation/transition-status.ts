@@ -130,7 +130,7 @@ function findTicket(name: string): string | null {
 }
 
 function getSection(content: string, section: string): string {
-  const regex = new RegExp(`^## ${section}\\n([\\s\\S]*?)(?=^## |$)`, "m");
+  const regex = new RegExp(`^## ${section}\\n\\n?([\\s\\S]*?)(?=^## |$)`, "m");
   const match = content.match(regex);
   return match?.[1]?.trim() ?? "";
 }
@@ -397,11 +397,12 @@ function validateDone(content: string, name: string, ticketPath: string): string
   const ciErrors = validateInTesting();
   errors.push(...ciErrors);
 
-  // Feat tickets must have accepted demo
+  // Feat tickets must have accepted demo in ticketStatus.json
   if (isFeatTicket(name)) {
-    const demoAccepted = getSection(content, "Demo Accepted");
-    if (!demoAccepted || !demoAccepted.toLowerCase().startsWith("accepted")) {
-      errors.push("Demo Accepted must be 'accepted' — stakeholder must accept the demo first");
+    const statusData = loadTicketStatus();
+    const entry = statusData.tickets.find((t) => t.filename.includes(name));
+    if (!entry || !(entry as Record<string, unknown>).demoAccepted) {
+      errors.push("demoAccepted is not true in ticketStatus.json — run 'npm run ticket:accept -- " + name + "'");
     }
   }
 

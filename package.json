@@ -31,6 +31,7 @@
     "sprint:return": "npx tsx process/agile/automation/return-to-backlog.ts",
     "sprint:velocity": "npx tsx process/agile/automation/velocity-report.ts",
     "ticket:validate": "npx tsx process/agile/automation/validate-tickets.ts",
+    "ticket:accept": "npx tsx process/agile/automation/accept-demo.ts",
     "capture": "npx tsx tooling/capture/capture.ts"
   },
   "repository": {
