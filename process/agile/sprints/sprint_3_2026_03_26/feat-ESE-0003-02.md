@@ -1,5 +1,5 @@
 ## Status
-readyForDev
+done
 
 ## Title
 feat-ESE-0003-02: Implement component schema definition and SoA storage
@@ -30,9 +30,9 @@ Unit tests in engine/ecs/component.test.ts
 ## Subtasks
 
 ## Started
-
+2026-03-26T05:53:53.786Z
 ## Completed
-
+2026-03-26T05:54:54.894Z
 ## Blockers
 - feat-ESE-0003-01 (needs entity IDs)
 

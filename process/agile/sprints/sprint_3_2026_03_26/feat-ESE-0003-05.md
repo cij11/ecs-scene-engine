@@ -1,5 +1,5 @@
 ## Status
-readyForDev
+inDevelopment
 
 ## Title
 feat-ESE-0003-05: Implement query engine
@@ -32,7 +32,7 @@ Unit tests in engine/ecs/query.test.ts
 ## Subtasks
 
 ## Started
-
+2026-03-26T05:59:35.032Z
 ## Completed
 
 ## Blockers
