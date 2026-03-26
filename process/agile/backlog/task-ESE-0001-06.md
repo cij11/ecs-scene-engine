@@ -2,18 +2,20 @@
 draft
 
 ## Title
-task-ESE-0001-06: Write architecture docs
+task-ESE-0001-06: Define view layer and rendering integration
 
 ## Description
-Consolidate all architectural decisions from the preceding subtasks into a cohesive architecture document in docs/.
+Define the view layer. The view is completely agnostic to the ECS engine. The engine emits state; the view reads it and renders. Define how view/ connects to engine output and to browser/.
 
 ## Acceptance Criteria
-- Architecture overview document exists in docs/
-- References the ECS model, module boundaries, data flow, rendering strategy, and build tooling
-- Serves as the single entry point for understanding the project architecture
+- View layer responsibilities are documented (what it does and doesn't do)
+- Interface between engine state and view is defined
+- How view/ connects to browser/ (DOM, canvas) is documented
+- Rendering technology choices are deferred but the abstraction boundary is clear
+- Documented in docs/
 
 ## Testing Scenarios
-- A new contributor can read the architecture doc and understand the project structure end to end
+- A developer can read the doc and implement a new renderer without touching engine code
 
 ## Testing Notes
 Documentation ticket. Validation by review.
@@ -28,7 +30,7 @@ Documentation ticket. Validation by review.
 ## Completed
 
 ## Blockers
-- task-ESE-0001-01 through task-ESE-0001-05
+- task-ESE-0001-04 (need engine API surface to define the interface)
 
 ## Knowledge Gaps
 

@@ -2,25 +2,23 @@
 draft
 
 ## Title
-task-ESE-0001-05: Choose build tooling and test framework
+task-ESE-0001-05: Define game module structure
 
 ## Description
-Select and configure the bundler, dev server, and test framework for the project.
+Define how game/ extends the engine. How game-specific components, systems, scenes, and scene compositions are organised.
 
 ## Acceptance Criteria
-- Bundler is chosen and configured (esbuild, vite, etc.)
-- Test framework is chosen and configured (vitest, node:test, etc.)
-- Dev server with hot reload is configured in browser/
-- npm scripts are defined for build, dev, and test
+- Game directory structure is defined
+- Pattern for defining game-specific components and systems is documented
+- How game scenes compose into a full game is documented
+- Relationship between game/ and engine/ imports is clear
 - Documented in docs/
 
 ## Testing Scenarios
-- `npm run build` produces a working bundle
-- `npm run test` runs and reports results
-- `npm run dev` serves the game locally
+- A developer can read the doc and add a new game scene with custom components and systems
 
 ## Testing Notes
-This subtask has concrete outputs that can be verified by running the scripts.
+Documentation ticket. Validation by review.
 
 ## Size
 1
@@ -32,6 +30,7 @@ This subtask has concrete outputs that can be verified by running the scripts.
 ## Completed
 
 ## Blockers
+- task-ESE-0001-04 (need engine API surface first)
 
 ## Knowledge Gaps
 
