@@ -1,5 +1,5 @@
 ## Status
-inDevelopment
+done
 
 ## Title
 task-ESE-0001-05: Define game module structure
@@ -28,7 +28,7 @@ Documentation ticket. Validation by review.
 ## Started
 2026-03-26T05:32:21.120Z
 ## Completed
-
+2026-03-26T05:32:57.203Z
 ## Blockers
 - task-ESE-0001-04 (need engine API surface first)
 

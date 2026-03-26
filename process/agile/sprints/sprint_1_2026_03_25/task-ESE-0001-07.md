@@ -1,5 +1,5 @@
 ## Status
-readyForDev
+done
 
 ## Title
 task-ESE-0001-07: Define serialisation layer
@@ -27,9 +27,9 @@ Documentation ticket. Validation by review.
 ## Subtasks
 
 ## Started
-
+2026-03-26T05:33:37.252Z
 ## Completed
-
+2026-03-26T05:34:15.052Z
 ## Blockers
 - task-ESE-0001-04 (need engine API surface)
 

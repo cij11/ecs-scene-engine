@@ -1,5 +1,5 @@
 ## Status
-readyForDev
+inDevelopment
 
 ## Title
 task-ESE-0001-08: Choose build tooling and test framework
@@ -28,7 +28,7 @@ This subtask has concrete outputs that can be verified by running the scripts.
 ## Subtasks
 
 ## Started
-
+2026-03-26T05:34:16.281Z
 ## Completed
 
 ## Blockers
