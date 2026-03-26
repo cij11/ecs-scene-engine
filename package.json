@@ -7,7 +7,8 @@
     "doc": "docs"
   },
   "workspaces": [
-    "tooling/slack-notify"
+    "tooling/slack-notify",
+    "tooling/slack-listener"
   ],
   "scripts": {
     "test": "vitest run",

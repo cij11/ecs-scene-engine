@@ -2,11 +2,13 @@
 
 ## Overview
 
-The engine uses an Entity-Component-System (ECS) architecture. Each scene in the scene tree is a World with its own ECS. The design prioritises plain data, plain functions, and TypeScript type safety. There are no base classes to extend.
+The engine uses an Entity-Component-System (ECS) architecture. ECS is opt-in — only nodes of type `NodeECS` create a World and run simulation. Nodes without ECS are static templates that define structure and default properties (see [node-architecture.md](node-architecture.md)).
+
+The design prioritises plain data, plain functions, and TypeScript type safety. There are no base classes to extend.
 
 ## World
 
-A World is the container for a single ECS instance. One World exists per scene.
+A World is the container for a single ECS instance. A World is created by a `NodeECS` node.
 
 A World contains:
 - **Entity index** — dense/sparse set mapping entity IDs to their component masks
@@ -14,7 +16,9 @@ A World contains:
 - **Query cache** — live result sets, incrementally maintained as entities change
 - **System pipeline** — an ordered list of system functions to execute each tick
 
-Worlds are created and destroyed as scenes are added to and removed from the scene tree. A World has no knowledge of its position in the scene tree — inter-scene communication is handled by the scene layer via signals (up) and calls (down).
+Worlds are created by `NodeECS` nodes. A World has no knowledge of its position in the node hierarchy — inter-ECS communication is handled via ports and signals (see [inter-ecs-communication.md](inter-ecs-communication.md)).
+
+Multiple ECS worlds can exist in a hierarchy. They tick root-to-leaf, with parent worlds authoritative over children.
 
 ## Entity
 

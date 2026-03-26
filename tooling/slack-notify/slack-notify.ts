@@ -110,19 +110,43 @@ function extractContext(input: HookInput): string {
   return "(no context available)";
 }
 
+interface ThreadState {
+  session_id: string;
+  thread_ts: string;
+  cwd: string;
+}
+
 function getThreadTs(sessionId: string): string | undefined {
   try {
-    const file = path.join(THREAD_STATE_DIR, `${sessionId}.txt`);
-    return fs.readFileSync(file, "utf-8").trim() || undefined;
+    const file = path.join(THREAD_STATE_DIR, `${sessionId}.json`);
+    const state: ThreadState = JSON.parse(fs.readFileSync(file, "utf-8"));
+    return state.thread_ts;
   } catch {
     return undefined;
   }
 }
 
-function saveThreadTs(sessionId: string, ts: string): void {
+function saveThreadState(sessionId: string, threadTs: string, cwd: string): void {
   try {
     fs.mkdirSync(THREAD_STATE_DIR, { recursive: true });
-    fs.writeFileSync(path.join(THREAD_STATE_DIR, `${sessionId}.txt`), ts, "utf-8");
+
+    const state: ThreadState = { session_id: sessionId, thread_ts: threadTs, cwd };
+    fs.writeFileSync(
+      path.join(THREAD_STATE_DIR, `${sessionId}.json`),
+      JSON.stringify(state, null, 2),
+      "utf-8",
+    );
+
+    // Reverse index: thread_ts → session_id
+    const indexPath = path.join(THREAD_STATE_DIR, "by-thread.json");
+    let index: Record<string, string> = {};
+    try {
+      index = JSON.parse(fs.readFileSync(indexPath, "utf-8"));
+    } catch {
+      // fresh index
+    }
+    index[threadTs] = sessionId;
+    fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), "utf-8");
   } catch {
     // best effort
   }
@@ -151,7 +175,7 @@ function buildBlocks(emoji: string, title: string, project: string, sessionId: s
   ];
 }
 
-async function postWithBot(blocks: unknown[], sessionId: string): Promise<void> {
+async function postWithBot(blocks: unknown[], sessionId: string, cwd: string): Promise<void> {
   const threadTs = getThreadTs(sessionId);
 
   const body: Record<string, unknown> = {
@@ -180,7 +204,7 @@ async function postWithBot(blocks: unknown[], sessionId: string): Promise<void> 
     if (!threadTs) {
       const data = (await res.json()) as { ok?: boolean; ts?: string };
       if (data.ok && data.ts) {
-        saveThreadTs(sessionId, data.ts);
+        saveThreadState(sessionId, data.ts, cwd);
       }
     }
   } catch {
@@ -241,7 +265,7 @@ async function main() {
   const blocks = buildBlocks(emoji, title, project, sessionId, context);
 
   if (useBot) {
-    await postWithBot(blocks, sessionId);
+    await postWithBot(blocks, sessionId, input.cwd ?? process.cwd());
   } else {
     await postWithWebhook(blocks);
   }

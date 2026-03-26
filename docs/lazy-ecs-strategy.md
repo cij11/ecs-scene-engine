@@ -2,15 +2,15 @@
 
 ## Problem
 
-Everything in the game is a scene, and each scene has its own ECS World. A complex game may have hundreds or thousands of scenes in the tree at once — UI elements, particle emitters, static decorations, background tiles, off-screen entities. Running a full ECS tick on every scene every frame would be wasteful and unscalable.
+ECS is opt-in — only `NodeECS` nodes create a World and run simulation. Most nodes are static data (see [node-architecture.md](node-architecture.md)). However, a complex game may still have many `NodeECS` instances in the hierarchy — a space simulation, multiple ship interiors, space stations, each with their own ECS. Running every ECS World every frame would be wasteful.
 
 ## Principle
 
-A scene's ECS only ticks when it has work to do. By default, scenes are dormant. They must opt in to processing.
+A `NodeECS` World only ticks when it has work to do. By default, ECS worlds are active. They can be put to sleep to avoid processing.
 
-## Scene Processing Modes
+## NodeECS Processing Modes
 
-Each scene has a processing mode that determines when its ECS ticks:
+Each `NodeECS` has a processing mode that determines when its World ticks:
 
 ### Active
 
