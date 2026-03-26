@@ -7,14 +7,8 @@
  */
 
 import type { World } from "../engine/ecs/world.js";
-import {
-  query,
-  getComponent,
-  getStore,
-  hasEntity,
-} from "../engine/ecs/world.js";
+import { query, getStore } from "../engine/ecs/world.js";
 import { queryEntities } from "../engine/ecs/query.js";
-import { getIndex } from "../engine/ecs/entity.js";
 import { SceneRef } from "../engine/core-components/scene-ref.js";
 import { Transform } from "../engine/ecs/components/transform.js";
 import type { SceneRegistry } from "../engine/scene/registry.js";
@@ -22,7 +16,6 @@ import { lookupVisualNodes } from "../engine/scene/registry.js";
 import type { Renderer, RenderHandle, RenderTransform } from "./renderer.js";
 import { handleNode } from "./node-handlers.js";
 import type { WorldNode } from "../engine/scene/world-tree.js";
-import { flattenWorldTree } from "../engine/scene/world-tree.js";
 import { combineTransforms, type TransformData } from "../engine/scene/transform-propagation.js";
 
 export { Transform };
@@ -41,10 +34,7 @@ export interface ViewSync {
   state: SyncState;
 }
 
-export function createViewSync(
-  renderer: Renderer,
-  sceneRegistry: SceneRegistry,
-): ViewSync {
+export function createViewSync(renderer: Renderer, sceneRegistry: SceneRegistry): ViewSync {
   return {
     renderer,
     sceneRegistry,
@@ -59,10 +49,7 @@ export function createViewSync(
  * Sync an entire world tree to the renderer.
  * Traverses root-to-leaf, propagating parent transforms to children.
  */
-export function syncWorldTree(
-  sync: ViewSync,
-  root: WorldNode,
-): void {
+export function syncWorldTree(sync: ViewSync, root: WorldNode): void {
   syncWorldTreeNode(sync, root, undefined);
 }
 
@@ -82,10 +69,16 @@ function syncWorldTreeNode(
       if (tStore) {
         const eid = child.parentEntityIndex;
         const localT: TransformData = {
-          px: tStore.px[eid]!, py: tStore.py[eid]!, pz: tStore.pz[eid]!,
-          rx: tStore.rx[eid]!, ry: tStore.ry[eid]!, rz: tStore.rz[eid]!,
+          px: tStore.px[eid]!,
+          py: tStore.py[eid]!,
+          pz: tStore.pz[eid]!,
+          rx: tStore.rx[eid]!,
+          ry: tStore.ry[eid]!,
+          rz: tStore.rz[eid]!,
           rw: tStore.rw[eid]!,
-          sx: tStore.sx[eid]!, sy: tStore.sy[eid]!, sz: tStore.sz[eid]!,
+          sx: tStore.sx[eid]!,
+          sy: tStore.sy[eid]!,
+          sz: tStore.sz[eid]!,
         };
         childParentTransform = parentTransform
           ? combineTransforms(parentTransform, localT)
@@ -101,11 +94,7 @@ function syncWorldTreeNode(
  * Sync a single world's renderable entities to the renderer.
  * Call once per frame after ticking the ECS.
  */
-export function syncWorld(
-  sync: ViewSync,
-  world: World,
-  parentTransform?: TransformData,
-): void {
+export function syncWorld(sync: ViewSync, world: World, parentTransform?: TransformData): void {
   const { renderer, sceneRegistry, state } = sync;
 
   const q = query(world, [Transform, SceneRef]);
@@ -158,9 +147,7 @@ export function syncWorld(
     };
 
     // Apply parent transform offset if in a child world
-    const t = parentTransform
-      ? combineTransforms(parentTransform, local)
-      : local;
+    const t = parentTransform ? combineTransforms(parentTransform, local) : local;
 
     const handles = state.entityHandles.get(entityIdx)!;
     for (const handle of handles) {

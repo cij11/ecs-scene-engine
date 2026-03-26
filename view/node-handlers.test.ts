@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { handleNode } from "./node-handlers.js";
+import type { LightParams, CameraParams } from "./renderer.js";
 import { createNode } from "../engine/scene/node.js";
 
 describe("Node type handlers", () => {
@@ -35,7 +36,7 @@ describe("Node type handlers", () => {
     const params = handleNode(node);
 
     expect(params!.type).toBe("light");
-    expect((params as any).lightType).toBe("point");
+    expect((params as LightParams).lightType).toBe("point");
   });
 
   it("handles camera nodes", () => {
@@ -56,7 +57,7 @@ describe("Node type handlers", () => {
     const node = createNode("camera", {});
     const params = handleNode(node);
 
-    expect((params as any).projection).toBe("perspective");
+    expect((params as CameraParams).projection).toBe("perspective");
   });
 
   it("returns null for unknown node types", () => {

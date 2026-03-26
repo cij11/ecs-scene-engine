@@ -19,6 +19,8 @@ Sections:
 - **Testing Notes**
 - **Size**: In story points. Initially an arbitrary estimate, which will get more accurate over time. When a ticket has subtasks, it has no points of its own — its size is the recursive sum of its subtasks.
 - **Subtasks**: Tickets get broken down if they are too large. Subtask names are suffixed to their parent: e.g. `task-ESE-0001-01`, `task-ESE-0001-02`. Once a subtask gains subtasks of its own, it is promoted to a top-level ticket with the next available number. The old subtask reference in the parent is updated to point to the new ticket.
+- **Stakeholder Understanding**: Before moving to readyForDev, the stakeholder must explain the ticket back to the agent in sufficient detail. The agent records a summary of the stakeholder's explanation here. If empty, the ticket cannot be marked readyForDev.
+- **Demo Accepted**: Before a sprint can be closed, the stakeholder must confirm the demo is acceptable. Record "accepted" or "rejected" with a timestamp and any feedback.
 - **Team**: The session ID of the agent working on the ticket.
 - **Started**
 - **Completed**
@@ -48,12 +50,27 @@ This registers the sprint in `sprints.csv` with the ticket list and estimated po
 
 ### Completing a sprint
 
-1. **Demo**: Present the sprint's work to stakeholders. Each sprint has a `demo/` folder containing:
+1. **Validate**: Before presenting to stakeholders, the developer must validate the demo themselves:
+   - Run `npm test` — all tests pass
+   - Run `npm run build` — build succeeds
+   - If the sprint includes visual output: run `npm run dev`, look at the rendered output, and verify it matches the acceptance criteria
+   - Capture screenshots of any visual output
+   - If something doesn't look right, fix it before demoing — a broken demo is worse than no demo
+
+2. **Demo**: Present the sprint's work to stakeholders. Each sprint has a `demo/` folder containing:
    - `demo.md` — demo script, key features highlighted, stakeholder Q&A notes
+   - Screenshots of visual output (captured during validation)
    - Test files demonstrating the sprint's deliverables
-   - Presentations or multimedia supporting the demo
    - QA outcomes (what was tested, what passed, any issues found)
-2. **Close**: Run `npm run sprint:complete -- <sprint_name>`. This:
+   - Validation checklist (what the developer verified before presenting)
+
+3. **Acceptance**: The stakeholder reviews the demo and either accepts or rejects it. If rejected:
+   - The sprint stays open
+   - Feedback is recorded in `demo.md`
+   - Issues are fixed and the demo is re-presented
+   - The sprint is not closed until the demo is accepted
+
+4. **Close**: Only after demo acceptance, run `npm run sprint:complete -- <sprint_name>`. This:
    - Calculates actual hours from Started/Completed timestamps on tickets
    - Updates `sprints.csv` with status `complete` and actual hours
    - Appends a row to `velocity.csv` with completed points, total points, and hours

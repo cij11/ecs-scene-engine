@@ -16,17 +16,7 @@ export type {
 export { ThreeJSRenderer } from "./threejs/index.js";
 
 // View sync
-export {
-  Transform,
-  createViewSync,
-  syncWorld,
-  syncWorldTree,
-  type ViewSync,
-} from "./sync.js";
+export { Transform, createViewSync, syncWorld, syncWorldTree, type ViewSync } from "./sync.js";
 
 // Node handlers
-export {
-  handleNode,
-  registerNodeHandler,
-  type NodeHandler,
-} from "./node-handlers.js";
+export { handleNode, registerNodeHandler, type NodeHandler } from "./node-handlers.js";

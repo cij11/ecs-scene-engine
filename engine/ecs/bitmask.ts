@@ -92,19 +92,13 @@ export function hasComponentBit(
   return (registry.entityMasks[mask.generationId]![entityIndex]! & mask.bitflag) !== 0;
 }
 
-export function clearAllBits(
-  registry: BitmaskRegistry,
-  entityIndex: number,
-): void {
+export function clearAllBits(registry: BitmaskRegistry, entityIndex: number): void {
   for (let g = 0; g <= registry.currentGeneration; g++) {
     registry.entityMasks[g]![entityIndex] = 0;
   }
 }
 
-export function growBitmaskCapacity(
-  registry: BitmaskRegistry,
-  newCapacity: number,
-): void {
+export function growBitmaskCapacity(registry: BitmaskRegistry, newCapacity: number): void {
   for (let g = 0; g < registry.entityMasks.length; g++) {
     const newMasks = new Uint32Array(newCapacity);
     newMasks.set(registry.entityMasks[g]!);

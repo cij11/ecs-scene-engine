@@ -5,5 +5,7 @@
 import { defineComponent } from "../component.js";
 
 export const Velocity = defineComponent({
-  vx: Float32Array, vy: Float32Array, vz: Float32Array,
+  vx: Float32Array,
+  vy: Float32Array,
+  vz: Float32Array,
 });

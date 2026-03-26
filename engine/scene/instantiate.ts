@@ -9,10 +9,7 @@
 
 import type { World } from "../ecs/world.js";
 import type { EntityId } from "../ecs/entity.js";
-import {
-  addEntity,
-  addComponent,
-} from "../ecs/world.js";
+import { addEntity, addComponent } from "../ecs/world.js";
 import { Transform } from "../ecs/components/transform.js";
 import { Velocity } from "../ecs/components/velocity.js";
 import { SceneRef } from "../core-components/scene-ref.js";
@@ -53,12 +50,21 @@ export function instantiateScene(
 
   // Walk nodes and extract simulation-relevant data
   let hasTransform = false;
-  let tx = 0, ty = 0, tz = 0;
-  let rx = 0, ry = 0, rz = 0, rw = 1;
-  let ssx = 1, ssy = 1, ssz = 1;
+  let tx = 0,
+    ty = 0,
+    tz = 0;
+  let rx = 0,
+    ry = 0,
+    rz = 0,
+    rw = 1;
+  let ssx = 1,
+    ssy = 1,
+    ssz = 1;
 
   let hasVelocity = false;
-  let vx = 0, vy = 0, vz = 0;
+  let vx = 0,
+    vy = 0,
+    vz = 0;
 
   walkNodes(sceneRoot, (node) => {
     switch (node.type) {
@@ -66,7 +72,9 @@ export function instantiateScene(
         hasTransform = true;
         if (node.data.position) {
           const p = node.data.position as [number, number, number];
-          tx = p[0]; ty = p[1]; tz = p[2];
+          tx = p[0];
+          ty = p[1];
+          tz = p[2];
         } else {
           tx = (node.data.x as number) ?? 0;
           ty = (node.data.y as number) ?? 0;
@@ -74,11 +82,16 @@ export function instantiateScene(
         }
         if (node.data.rotation) {
           const r = node.data.rotation as [number, number, number, number];
-          rx = r[0]; ry = r[1]; rz = r[2]; rw = r[3];
+          rx = r[0];
+          ry = r[1];
+          rz = r[2];
+          rw = r[3];
         }
         if (node.data.scale) {
           const s = node.data.scale as [number, number, number];
-          ssx = s[0]; ssy = s[1]; ssz = s[2];
+          ssx = s[0];
+          ssy = s[1];
+          ssz = s[2];
         }
         break;
 
@@ -86,7 +99,9 @@ export function instantiateScene(
         if (node.data.velocity) {
           hasVelocity = true;
           const vel = node.data.velocity as [number, number, number];
-          vx = vel[0]; vy = vel[1]; vz = vel[2];
+          vx = vel[0];
+          vy = vel[1];
+          vz = vel[2];
         }
         break;
     }
@@ -105,9 +120,16 @@ export function instantiateScene(
   // Add components
   if (hasTransform) {
     addComponent(world, entity, Transform, {
-      px: tx, py: ty, pz: tz,
-      rx, ry, rz, rw,
-      sx: ssx, sy: ssy, sz: ssz,
+      px: tx,
+      py: ty,
+      pz: tz,
+      rx,
+      ry,
+      rz,
+      rw,
+      sx: ssx,
+      sy: ssy,
+      sz: ssz,
     });
   }
 

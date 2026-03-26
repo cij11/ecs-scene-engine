@@ -170,7 +170,7 @@ describe("World - systems and tick", () => {
     const velStore = getStore(world, Velocity)!;
     const q = query(world, [Position, Velocity]);
 
-    const movementSystem = (w: any, dt: number) => {
+    const movementSystem = (_w: object, dt: number) => {
       for (const eid of queryEntities(q)) {
         posStore.x[eid]! += velStore.vx[eid]! * dt;
       }

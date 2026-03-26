@@ -31,10 +31,7 @@ export function addChildWorld(
   parent.children.push(child);
 }
 
-export function removeChildWorld(
-  parent: WorldNode,
-  child: WorldNode,
-): boolean {
+export function removeChildWorld(parent: WorldNode, child: WorldNode): boolean {
   const idx = parent.children.indexOf(child);
   if (idx === -1) return false;
   parent.children.splice(idx, 1);

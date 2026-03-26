@@ -82,7 +82,9 @@ export function growStorage<S extends SchemaDefinition>(
   for (const key in schema) {
     const Ctor = schema[key]!;
     const newArray = new Ctor(newCapacity) as InstanceType<S[typeof key]>;
-    (newArray as any).set(storage.stores[key]);
+    (newArray as InstanceType<TypedArrayConstructor>).set(
+      storage.stores[key] as InstanceType<TypedArrayConstructor>,
+    );
     storage.stores[key] = newArray;
   }
   storage.capacity = newCapacity;
@@ -92,7 +94,7 @@ export function growStorage<S extends SchemaDefinition>(
  * ComponentRegistry holds all component storages for a World.
  */
 export interface ComponentRegistry {
-  storages: Map<number, ComponentStorage<any>>;
+  storages: Map<number, ComponentStorage<SchemaDefinition>>;
   schemas: Map<number, SchemaDefinition>;
   capacity: number;
 }
@@ -105,10 +107,7 @@ export function createComponentRegistry(capacity: number = 1024): ComponentRegis
   };
 }
 
-export function ensureRegistered(
-  registry: ComponentRegistry,
-  def: AnyComponentDef,
-): void {
+export function ensureRegistered(registry: ComponentRegistry, def: AnyComponentDef): void {
   if (def.isTag) return;
   if (registry.storages.has(def.id)) return;
 
@@ -145,7 +144,7 @@ export function setComponentData<S extends SchemaDefinition>(
   const idx = getIndex(entityId);
   for (const key in data) {
     if (key in storage.stores) {
-      (storage.stores[key] as any)[idx] = data[key]!;
+      (storage.stores[key] as InstanceType<TypedArrayConstructor>)[idx] = data[key]!;
     }
   }
 }
@@ -161,7 +160,7 @@ export function getComponentData<S extends SchemaDefinition>(
   const idx = getIndex(entityId);
   const result = {} as { [K in keyof S]: number };
   for (const key in def.schema) {
-    result[key] = (storage.stores[key] as any)[idx] as number;
+    result[key] = (storage.stores[key] as InstanceType<TypedArrayConstructor>)[idx] as number;
   }
   return result;
 }

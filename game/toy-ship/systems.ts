@@ -52,10 +52,22 @@ export function wanderSystem(world: World, dt: number): void {
 
     // Clamp to interior bounds (-2 to 2 on x and z)
     const bound = 2;
-    if (t.px[eid]! > bound) { t.px[eid] = bound; v.vx[eid] = -Math.abs(v.vx[eid]!); }
-    if (t.px[eid]! < -bound) { t.px[eid] = -bound; v.vx[eid] = Math.abs(v.vx[eid]!); }
-    if (t.pz[eid]! > bound) { t.pz[eid] = bound; v.vz[eid] = -Math.abs(v.vz[eid]!); }
-    if (t.pz[eid]! < -bound) { t.pz[eid] = -bound; v.vz[eid] = Math.abs(v.vz[eid]!); }
+    if (t.px[eid]! > bound) {
+      t.px[eid] = bound;
+      v.vx[eid] = -Math.abs(v.vx[eid]!);
+    }
+    if (t.px[eid]! < -bound) {
+      t.px[eid] = -bound;
+      v.vx[eid] = Math.abs(v.vx[eid]!);
+    }
+    if (t.pz[eid]! > bound) {
+      t.pz[eid] = bound;
+      v.vz[eid] = -Math.abs(v.vz[eid]!);
+    }
+    if (t.pz[eid]! < -bound) {
+      t.pz[eid] = -bound;
+      v.vz[eid] = Math.abs(v.vz[eid]!);
+    }
   }
 
   if (wanderTimer > 2) wanderTimer = 0;

@@ -7,12 +7,7 @@
  */
 
 import * as THREE from "three";
-import type {
-  Renderer,
-  RenderHandle,
-  RenderObjectParams,
-  RenderTransform,
-} from "../renderer.js";
+import type { Renderer, RenderHandle, RenderObjectParams, RenderTransform } from "../renderer.js";
 
 export class ThreeJSRenderer implements Renderer {
   private scene = new THREE.Scene();
@@ -51,32 +46,20 @@ export class ThreeJSRenderer implements Renderer {
       case "light": {
         switch (params.lightType) {
           case "directional":
-            obj = new THREE.DirectionalLight(
-              params.color ?? 0xffffff,
-              params.intensity ?? 1,
-            );
+            obj = new THREE.DirectionalLight(params.color ?? 0xffffff, params.intensity ?? 1);
             break;
           case "spot": {
-            const spot = new THREE.SpotLight(
-              params.color ?? 0xffffff,
-              params.intensity ?? 1,
-            );
+            const spot = new THREE.SpotLight(params.color ?? 0xffffff, params.intensity ?? 1);
             if (params.angle !== undefined) spot.angle = params.angle;
             obj = spot;
             break;
           }
           case "ambient":
-            obj = new THREE.AmbientLight(
-              params.color ?? 0xffffff,
-              params.intensity ?? 0.5,
-            );
+            obj = new THREE.AmbientLight(params.color ?? 0xffffff, params.intensity ?? 0.5);
             break;
           case "point":
           default: {
-            const point = new THREE.PointLight(
-              params.color ?? 0xffffff,
-              params.intensity ?? 1,
-            );
+            const point = new THREE.PointLight(params.color ?? 0xffffff, params.intensity ?? 1);
             if (params.range !== undefined) point.distance = params.range;
             obj = point;
             break;
@@ -87,7 +70,11 @@ export class ThreeJSRenderer implements Renderer {
       case "camera": {
         let cam: THREE.Camera;
         if (params.projection === "orthographic") {
-          cam = new THREE.OrthographicCamera(-10, 10, 10, -10,
+          cam = new THREE.OrthographicCamera(
+            -10,
+            10,
+            10,
+            -10,
             params.near ?? 0.1,
             params.far ?? 1000,
           );
@@ -128,7 +115,7 @@ export class ThreeJSRenderer implements Renderer {
     if (obj instanceof THREE.Mesh) {
       obj.geometry.dispose();
       if (Array.isArray(obj.material)) {
-        obj.material.forEach(m => m.dispose());
+        obj.material.forEach((m) => m.dispose());
       } else {
         obj.material.dispose();
       }

@@ -22,7 +22,44 @@ if (!fs.existsSync(sprintDir)) {
   process.exit(1);
 }
 
-// Read tickets in the sprint
+// --- Guard rails ---
+
+const errors: string[] = [];
+
+// Gate 1: Demo folder must exist with demo.md
+const demoDir = path.join(sprintDir, "demo");
+const demoDoc = path.join(demoDir, "demo.md");
+if (!fs.existsSync(demoDir)) {
+  errors.push("Missing demo/ folder — a demo must be prepared before closing the sprint");
+}
+if (!fs.existsSync(demoDoc)) {
+  errors.push("Missing demo/demo.md — demo documentation is required");
+}
+
+// Gate 2: Demo must be accepted by stakeholder
+if (fs.existsSync(demoDoc)) {
+  const demoContent = fs.readFileSync(demoDoc, "utf-8");
+  if (!demoContent.toLowerCase().includes("accepted")) {
+    errors.push("Demo has not been accepted by stakeholder — demo.md must contain acceptance confirmation");
+  }
+}
+
+// Gate 3: Check parent tickets for Demo Accepted field
+const allTickets = fs.readdirSync(sprintDir).filter(f => f.match(/^(?:feat|bugfix|task)-ESE-\d{4}\.md$/));
+let hasAcceptedDemo = false;
+for (const file of allTickets) {
+  const content = fs.readFileSync(path.join(sprintDir, file), "utf-8");
+  const demoField = content.match(/^## Demo Accepted\n(.+)$/m);
+  if (demoField?.[1]?.trim().toLowerCase().startsWith("accepted")) {
+    hasAcceptedDemo = true;
+    break;
+  }
+}
+if (!hasAcceptedDemo) {
+  errors.push("No ticket has 'Demo Accepted' marked as accepted by the stakeholder");
+}
+
+// Gate 4: Read tickets and validate
 const files = fs.readdirSync(sprintDir).filter(f => f.match(/^(?:feat|bugfix|task)-ESE-/) && f.endsWith(".md"));
 
 let completedPoints = 0;
@@ -30,17 +67,25 @@ let totalPoints = 0;
 let completedCount = 0;
 let totalCount = 0;
 let totalHours = 0;
+const incompleteTickets: string[] = [];
+const missingSize: string[] = [];
+const missingTimestamps: string[] = [];
 
 for (const file of files) {
   const content = fs.readFileSync(path.join(sprintDir, file), "utf-8");
+  const ticketName = file.replace(".md", "");
 
   const sizeMatch = content.match(/^## Size\n(.+)$/m);
-  if (!sizeMatch) continue;
-  const val = sizeMatch[1]!.trim();
-  if (val.startsWith("Sum of subtasks")) continue;
+  const val = sizeMatch?.[1]?.trim();
 
-  const points = parseInt(val, 10);
-  if (isNaN(points)) continue;
+  // Skip parent tickets (points come from subtasks)
+  if (val?.startsWith("Sum of subtasks")) continue;
+
+  const points = val ? parseInt(val, 10) : NaN;
+  if (isNaN(points)) {
+    missingSize.push(ticketName);
+    continue;
+  }
 
   totalCount++;
   totalPoints += points;
@@ -51,6 +96,8 @@ for (const file of files) {
   if (status === "done") {
     completedCount++;
     completedPoints += points;
+  } else {
+    incompleteTickets.push(`${ticketName} (${status})`);
   }
 
   // Calculate hours from Started/Completed timestamps
@@ -60,14 +107,70 @@ for (const file of files) {
   if (startedMatch?.[1]?.trim() && completedMatch?.[1]?.trim()) {
     const started = new Date(startedMatch[1]!.trim());
     const completed = new Date(completedMatch[1]!.trim());
-    const hours = (completed.getTime() - started.getTime()) / (1000 * 60 * 60);
-    totalHours += hours;
+    if (!isNaN(started.getTime()) && !isNaN(completed.getTime())) {
+      const hours = (completed.getTime() - started.getTime()) / (1000 * 60 * 60);
+      totalHours += hours;
+    } else {
+      missingTimestamps.push(ticketName);
+    }
+  } else if (status === "done") {
+    missingTimestamps.push(ticketName);
   }
 }
 
+// Gate 3: Must have tickets with points
+if (totalCount === 0) {
+  errors.push("No tickets with story points found — velocity cannot be calculated");
+}
+
+// Gate 4: Velocity data must not be zeroed
+if (totalPoints === 0 && totalCount > 0) {
+  errors.push("Total points is 0 — all tickets are missing size estimates");
+}
+
+// Warnings (non-blocking)
+const warnings: string[] = [];
+
+if (incompleteTickets.length > 0) {
+  warnings.push(`Incomplete tickets: ${incompleteTickets.join(", ")}`);
+  warnings.push("Consider returning incomplete tickets to backlog before closing");
+}
+
+if (missingSize.length > 0) {
+  warnings.push(`Tickets missing size: ${missingSize.join(", ")}`);
+}
+
+if (missingTimestamps.length > 0) {
+  warnings.push(`Done tickets missing Started/Completed timestamps: ${missingTimestamps.join(", ")}`);
+  warnings.push("Hours will be inaccurate for these tickets");
+}
+
+if (completedPoints === 0 && completedCount === 0) {
+  warnings.push("No tickets completed — sprint velocity will be 0");
+}
+
+// --- Report ---
+
+if (errors.length > 0) {
+  console.error(`BLOCKED: Sprint "${sprintName}" cannot be closed:`);
+  for (const e of errors) console.error(`  ERROR: ${e}`);
+  if (warnings.length > 0) {
+    for (const w of warnings) console.error(`  WARN:  ${w}`);
+  }
+  process.exit(1);
+}
+
+if (warnings.length > 0) {
+  console.warn(`Warnings for sprint "${sprintName}":`);
+  for (const w of warnings) console.warn(`  WARN: ${w}`);
+  console.warn("");
+}
+
+// --- Apply ---
+
 const actualHours = Math.round(totalHours * 100) / 100;
 
-// Update sprints.csv — set status to complete and fill in hours
+// Update sprints.csv
 let csv = fs.readFileSync(CSV_PATH, "utf-8");
 const lines = csv.split("\n");
 const updatedLines = lines.map(line => {

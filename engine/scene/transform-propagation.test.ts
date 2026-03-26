@@ -17,9 +17,16 @@ describe("combineTransforms", () => {
     // Parent rotated 90 degrees around Y axis
     const angle = Math.PI / 2;
     const parent = {
-      px: 0, py: 0, pz: 0,
-      rx: 0, ry: Math.sin(angle / 2), rz: 0, rw: Math.cos(angle / 2),
-      sx: 1, sy: 1, sz: 1,
+      px: 0,
+      py: 0,
+      pz: 0,
+      rx: 0,
+      ry: Math.sin(angle / 2),
+      rz: 0,
+      rw: Math.cos(angle / 2),
+      sx: 1,
+      sy: 1,
+      sz: 1,
     };
     const local = { px: 1, py: 0, pz: 0, rx: 0, ry: 0, rz: 0, rw: 1, sx: 1, sy: 1, sz: 1 };
 
@@ -35,9 +42,16 @@ describe("combineTransforms", () => {
     // Parent at (10, 0, 0) rotated 90° around Y
     const angle = Math.PI / 2;
     const parent = {
-      px: 10, py: 0, pz: 0,
-      rx: 0, ry: Math.sin(angle / 2), rz: 0, rw: Math.cos(angle / 2),
-      sx: 1, sy: 1, sz: 1,
+      px: 10,
+      py: 0,
+      pz: 0,
+      rx: 0,
+      ry: Math.sin(angle / 2),
+      rz: 0,
+      rw: Math.cos(angle / 2),
+      sx: 1,
+      sy: 1,
+      sz: 1,
     };
     // Local at (5, 0, 0)
     const local = { px: 5, py: 0, pz: 0, rx: 0, ry: 0, rz: 0, rw: 1, sx: 1, sy: 1, sz: 1 };

@@ -7,7 +7,7 @@
  */
 
 import type { AnyComponentDef } from "./component.js";
-import type { BitmaskRegistry, ComponentBitmask } from "./bitmask.js";
+import type { BitmaskRegistry } from "./bitmask.js";
 
 /** Query modifier wrappers */
 export interface NotModifier {
@@ -117,7 +117,12 @@ function hashQuery(terms: QueryTerm[]): string {
       if (term.kind === "not") {
         parts.push(`!${term.def.id}`);
       } else {
-        parts.push(`?${term.defs.map(d => d.id).sort().join(",")}`);
+        parts.push(
+          `?${term.defs
+            .map((d) => d.id)
+            .sort()
+            .join(",")}`,
+        );
       }
     } else {
       parts.push(String(term.id));
@@ -194,10 +199,7 @@ export function createQueryRegistry(
   };
 }
 
-export function defineQuery(
-  registry: QueryRegistry,
-  terms: QueryTerm[],
-): QueryResult {
+export function defineQuery(registry: QueryRegistry, terms: QueryTerm[]): QueryResult {
   const hash = hashQuery(terms);
 
   const existing = registry.cache.get(hash);

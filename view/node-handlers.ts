@@ -22,28 +22,37 @@ export function handleNode(node: SceneNode): RenderObjectParams | null {
 
 // Built-in handlers
 
-registerNodeHandler("mesh", (node): RenderObjectParams => ({
-  type: "mesh",
-  geometryRef: node.data.geometry as string | undefined,
-  color: node.data.color as number | undefined,
-  roughness: node.data.roughness as number | undefined,
-  metalness: node.data.metalness as number | undefined,
-}));
+registerNodeHandler(
+  "mesh",
+  (node): RenderObjectParams => ({
+    type: "mesh",
+    geometryRef: node.data.geometry as string | undefined,
+    color: node.data.color as number | undefined,
+    roughness: node.data.roughness as number | undefined,
+    metalness: node.data.metalness as number | undefined,
+  }),
+);
 
-registerNodeHandler("light", (node): RenderObjectParams => ({
-  type: "light",
-  lightType: (node.data.lightType as "point" | "directional" | "spot" | "ambient") ?? "point",
-  color: node.data.color as number | undefined,
-  intensity: node.data.intensity as number | undefined,
-  range: node.data.range as number | undefined,
-  angle: node.data.angle as number | undefined,
-}));
+registerNodeHandler(
+  "light",
+  (node): RenderObjectParams => ({
+    type: "light",
+    lightType: (node.data.lightType as "point" | "directional" | "spot" | "ambient") ?? "point",
+    color: node.data.color as number | undefined,
+    intensity: node.data.intensity as number | undefined,
+    range: node.data.range as number | undefined,
+    angle: node.data.angle as number | undefined,
+  }),
+);
 
-registerNodeHandler("camera", (node): RenderObjectParams => ({
-  type: "camera",
-  projection: (node.data.projection as "perspective" | "orthographic") ?? "perspective",
-  fov: node.data.fov as number | undefined,
-  near: node.data.near as number | undefined,
-  far: node.data.far as number | undefined,
-  zoom: node.data.zoom as number | undefined,
-}));
+registerNodeHandler(
+  "camera",
+  (node): RenderObjectParams => ({
+    type: "camera",
+    projection: (node.data.projection as "perspective" | "orthographic") ?? "perspective",
+    fov: node.data.fov as number | undefined,
+    near: node.data.near as number | undefined,
+    far: node.data.far as number | undefined,
+    zoom: node.data.zoom as number | undefined,
+  }),
+);

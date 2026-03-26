@@ -94,18 +94,32 @@ describe("WorldTree", () => {
     // Entity in root moves right
     const e1 = addEntity(root.world);
     addComponent(root.world, e1, Transform, {
-      px: 0, py: 0, pz: 0,
-      rx: 0, ry: 0, rz: 0, rw: 1,
-      sx: 1, sy: 1, sz: 1,
+      px: 0,
+      py: 0,
+      pz: 0,
+      rx: 0,
+      ry: 0,
+      rz: 0,
+      rw: 1,
+      sx: 1,
+      sy: 1,
+      sz: 1,
     });
     addComponent(root.world, e1, Velocity, { vx: 10, vy: 0, vz: 0 });
 
     // Entity in child moves up
     const e2 = addEntity(child.world);
     addComponent(child.world, e2, Transform, {
-      px: 0, py: 0, pz: 0,
-      rx: 0, ry: 0, rz: 0, rw: 1,
-      sx: 1, sy: 1, sz: 1,
+      px: 0,
+      py: 0,
+      pz: 0,
+      rx: 0,
+      ry: 0,
+      rz: 0,
+      rw: 1,
+      sx: 1,
+      sy: 1,
+      sz: 1,
     });
     addComponent(child.world, e2, Velocity, { vx: 0, vy: 5, vz: 0 });
 

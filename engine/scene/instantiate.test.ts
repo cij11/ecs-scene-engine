@@ -3,11 +3,7 @@ import { instantiateScene } from "./instantiate.js";
 import { createNode } from "./node.js";
 import { createSceneRegistry, registerScene } from "./registry.js";
 import { resetComponentIdCounter } from "../ecs/component.js";
-import {
-  createWorld,
-  hasComponent,
-  getComponent,
-} from "../ecs/world.js";
+import { createWorld, hasComponent, getComponent } from "../ecs/world.js";
 import { Transform } from "../ecs/components/transform.js";
 import { Velocity } from "../ecs/components/velocity.js";
 import { SceneRef } from "../core-components/scene-ref.js";
@@ -32,9 +28,7 @@ describe("instantiateScene", () => {
   it("adds Transform from node data", () => {
     const world = createWorld();
     const registry = createSceneRegistry();
-    const scene = createNode("node", {}, [
-      createNode("transform", { x: 10, y: 20, z: 30 }),
-    ]);
+    const scene = createNode("node", {}, [createNode("transform", { x: 10, y: 20, z: 30 })]);
     const sceneId = registerScene(registry, scene);
 
     const entity = instantiateScene(world, registry, scene, sceneId);
@@ -49,9 +43,7 @@ describe("instantiateScene", () => {
   it("adds Transform from array position format", () => {
     const world = createWorld();
     const registry = createSceneRegistry();
-    const scene = createNode("node", {}, [
-      createNode("transform", { position: [5, 10, 15] }),
-    ]);
+    const scene = createNode("node", {}, [createNode("transform", { position: [5, 10, 15] })]);
     const sceneId = registerScene(registry, scene);
 
     const entity = instantiateScene(world, registry, scene, sceneId);
@@ -84,9 +76,7 @@ describe("instantiateScene", () => {
     const registry = createSceneRegistry();
     const scene = createNode("node", {}, [
       createNode("transform", { x: 0, y: 0, z: 0 }),
-      createNode("renderer", {}, [
-        createNode("mesh", { geometry: "./ship" }),
-      ]),
+      createNode("renderer", {}, [createNode("mesh", { geometry: "./ship" })]),
     ]);
     const sceneId = registerScene(registry, scene);
 
@@ -100,9 +90,7 @@ describe("instantiateScene", () => {
   it("applies position override", () => {
     const world = createWorld();
     const registry = createSceneRegistry();
-    const scene = createNode("node", {}, [
-      createNode("transform", { x: 10, y: 20, z: 30 }),
-    ]);
+    const scene = createNode("node", {}, [createNode("transform", { x: 10, y: 20, z: 30 })]);
     const sceneId = registerScene(registry, scene);
 
     const entity = instantiateScene(world, registry, scene, sceneId, {
@@ -118,9 +106,7 @@ describe("instantiateScene", () => {
   it("applies velocity override", () => {
     const world = createWorld();
     const registry = createSceneRegistry();
-    const scene = createNode("node", {}, [
-      createNode("transform", { x: 0, y: 0, z: 0 }),
-    ]);
+    const scene = createNode("node", {}, [createNode("transform", { x: 0, y: 0, z: 0 })]);
     const sceneId = registerScene(registry, scene);
 
     const entity = instantiateScene(world, registry, scene, sceneId, {
@@ -136,9 +122,7 @@ describe("instantiateScene", () => {
     const registry = createSceneRegistry();
     const scene = createNode("node", {}, [
       createNode("transform", { x: 1, y: 2, z: 3 }),
-      createNode("renderer", {}, [
-        createNode("mesh", { color: 0xff0000 }),
-      ]),
+      createNode("renderer", {}, [createNode("mesh", { color: 0xff0000 })]),
     ]);
 
     const entity = instantiateScene(world, registry, scene);

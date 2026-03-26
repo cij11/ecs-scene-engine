@@ -36,16 +36,10 @@ export {
 } from "./ecs/component.js";
 
 // Query result access
-export {
-  queryEntities,
-  type QueryResult,
-} from "./ecs/query.js";
+export { queryEntities, type QueryResult } from "./ecs/query.js";
 
 // Entity utilities
-export {
-  getIndex,
-  getGeneration,
-} from "./ecs/entity.js";
+export { getIndex, getGeneration } from "./ecs/entity.js";
 
 // Core components
 export { Transform } from "./ecs/components/transform.js";

@@ -24,12 +24,18 @@ beforeEach(() => {
   bitmasks = createBitmaskRegistry();
 });
 
-function addComp(entityIndex: number, def: ReturnType<typeof defineComponent> | ReturnType<typeof defineTag>) {
+function addComp(
+  entityIndex: number,
+  def: ReturnType<typeof defineComponent> | ReturnType<typeof defineTag>,
+) {
   registerComponent(bitmasks, def);
   addComponentBit(bitmasks, entityIndex, def);
 }
 
-function removeComp(entityIndex: number, def: ReturnType<typeof defineComponent> | ReturnType<typeof defineTag>) {
+function removeComp(
+  entityIndex: number,
+  def: ReturnType<typeof defineComponent> | ReturnType<typeof defineTag>,
+) {
   removeComponentBit(bitmasks, entityIndex, def);
 }
 

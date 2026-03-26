@@ -12,7 +12,6 @@ import {
   destroyEntity as destroyEntityId,
   hasEntity as hasEntityId,
   getIndex,
-  getAliveEntities,
 } from "./entity.js";
 import {
   type AnyComponentDef,
@@ -73,7 +72,7 @@ export function createWorld(capacity: number = 1024): World {
     components: createComponentRegistry(capacity),
     bitmasks,
     queries: createQueryRegistry(bitmasks, () =>
-      Array.from(entityIndex.dense.subarray(0, entityIndex.aliveCount))
+      Array.from(entityIndex.dense.subarray(0, entityIndex.aliveCount)),
     ),
     pipeline: createPipeline(),
   };
@@ -146,21 +145,13 @@ export function addComponent<S extends SchemaDefinition>(
   notifyComponentAdded(world.queries, idx, def.id);
 }
 
-export function removeComponent(
-  world: World,
-  id: EntityId,
-  def: AnyComponentDef,
-): void {
+export function removeComponent(world: World, id: EntityId, def: AnyComponentDef): void {
   const idx = getIndex(id);
   removeComponentBit(world.bitmasks, idx, def);
   notifyComponentRemoved(world.queries, idx, def.id);
 }
 
-export function hasComponent(
-  world: World,
-  id: EntityId,
-  def: AnyComponentDef,
-): boolean {
+export function hasComponent(world: World, id: EntityId, def: AnyComponentDef): boolean {
   return hasComponentBit(world.bitmasks, getIndex(id), def);
 }
 
@@ -172,41 +163,24 @@ export function getComponent<S extends SchemaDefinition>(
   return getComponentData(world.components, def, id);
 }
 
-export function getStore<S extends SchemaDefinition>(
-  world: World,
-  def: ComponentDef<S>,
-) {
+export function getStore<S extends SchemaDefinition>(world: World, def: ComponentDef<S>) {
   return getComponentStore(world.components, def);
 }
 
-export function query(
-  world: World,
-  terms: QueryTerm[],
-): QueryResult {
+export function query(world: World, terms: QueryTerm[]): QueryResult {
   return defineQueryInternal(world.queries, terms);
 }
 
-export function queryResults(
-  world: World,
-  terms: QueryTerm[],
-): ReadonlyArray<number> {
+export function queryResults(world: World, terms: QueryTerm[]): ReadonlyArray<number> {
   const q = defineQueryInternal(world.queries, terms);
   return queryEntities(q);
 }
 
-export function addSystem(
-  world: World,
-  phase: Phase,
-  system: SystemFn,
-): void {
+export function addSystem(world: World, phase: Phase, system: SystemFn): void {
   insertSystemInternal(world.pipeline, phase, system);
 }
 
-export function removeSystem(
-  world: World,
-  phase: Phase,
-  system: SystemFn,
-): boolean {
+export function removeSystem(world: World, phase: Phase, system: SystemFn): boolean {
   return removeSystemInternal(world.pipeline, phase, system);
 }
 

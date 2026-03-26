@@ -50,7 +50,11 @@ function grow(index: EntityIndex): void {
 
 export function createEntity(index: EntityIndex): EntityId {
   // Check if there are recycled IDs beyond aliveCount
-  if (index.aliveCount < index.capacity && index.dense[index.aliveCount] !== 0 && index.aliveCount > 0) {
+  if (
+    index.aliveCount < index.capacity &&
+    index.dense[index.aliveCount] !== 0 &&
+    index.aliveCount > 0
+  ) {
     // Recycle: the slot at aliveCount in dense may hold a previously used index
   }
 
@@ -59,7 +63,11 @@ export function createEntity(index: EntityIndex): EntityId {
   if (index.aliveCount > 0 && index.aliveCount < index.capacity) {
     // Check if there's a recycled entity at the dead region
     const recycledIndex = index.dense[index.aliveCount];
-    if (recycledIndex !== undefined && recycledIndex < index.capacity && index.generations[recycledIndex]! > 0) {
+    if (
+      recycledIndex !== undefined &&
+      recycledIndex < index.capacity &&
+      index.generations[recycledIndex]! > 0
+    ) {
       // Reuse this recycled index
       entityIndex = recycledIndex;
       const densePos = index.aliveCount;
@@ -96,7 +104,7 @@ export function destroyEntity(index: EntityIndex, id: EntityId): boolean {
   if (densePos >= index.aliveCount) return false;
 
   // Increment generation for recycling
-  index.generations[entityIndex] = (generation + 1) & 0xFFFF;
+  index.generations[entityIndex] = (generation + 1) & 0xffff;
 
   // Swap with last alive in dense array
   const lastAlive = index.aliveCount - 1;
@@ -135,5 +143,5 @@ export function getIndex(id: EntityId): number {
 }
 
 export function getGeneration(id: EntityId): number {
-  return (id >>> GENERATION_SHIFT) & 0xFFFF;
+  return (id >>> GENERATION_SHIFT) & 0xffff;
 }

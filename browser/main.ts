@@ -56,10 +56,9 @@ async function main() {
   const spaceNode = createWorldNode();
 
   // Add ship entity at radius 5 from origin
-  const shipEntity = instantiateScene(
-    spaceNode.world, sceneRegistry, spaceshipScene, shipSceneId,
-    { position: [5, 0, 0] },
-  );
+  const shipEntity = instantiateScene(spaceNode.world, sceneRegistry, spaceshipScene, shipSceneId, {
+    position: [5, 0, 0],
+  });
   const shipEntityIdx = getIndex(shipEntity);
 
   // Add lighting and camera to space world
@@ -82,10 +81,10 @@ async function main() {
   ];
 
   for (const pos of astronautPositions) {
-    instantiateScene(
-      interiorNode.world, sceneRegistry, astronautScene, astronautSceneId,
-      { position: pos, velocity: [(Math.random() - 0.5), 0, (Math.random() - 0.5)] },
-    );
+    instantiateScene(interiorNode.world, sceneRegistry, astronautScene, astronautSceneId, {
+      position: pos,
+      velocity: [Math.random() - 0.5, 0, Math.random() - 0.5],
+    });
   }
 
   // Interior systems

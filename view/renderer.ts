@@ -48,9 +48,16 @@ export type RenderObjectParams = MeshParams | LightParams | CameraParams;
 
 /** Transform data pushed to renderer objects each frame */
 export interface RenderTransform {
-  px: number; py: number; pz: number;
-  rx: number; ry: number; rz: number; rw: number;
-  sx: number; sy: number; sz: number;
+  px: number;
+  py: number;
+  pz: number;
+  rx: number;
+  ry: number;
+  rz: number;
+  rw: number;
+  sx: number;
+  sy: number;
+  sz: number;
 }
 
 /**

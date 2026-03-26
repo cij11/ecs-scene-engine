@@ -23,26 +23,17 @@ export function createSceneRegistry(): SceneRegistry {
   };
 }
 
-export function registerScene(
-  registry: SceneRegistry,
-  root: SceneNode,
-): SceneId {
+export function registerScene(registry: SceneRegistry, root: SceneNode): SceneId {
   const id = registry.nextId++;
   registry.scenes.set(id, root);
   return id;
 }
 
-export function getScene(
-  registry: SceneRegistry,
-  id: SceneId,
-): SceneNode | undefined {
+export function getScene(registry: SceneRegistry, id: SceneId): SceneNode | undefined {
   return registry.scenes.get(id);
 }
 
-export function lookupVisualNodes(
-  registry: SceneRegistry,
-  id: SceneId,
-): SceneNode[] {
+export function lookupVisualNodes(registry: SceneRegistry, id: SceneId): SceneNode[] {
   const root = registry.scenes.get(id);
   if (!root) return [];
   return findRenderingNodes(root);

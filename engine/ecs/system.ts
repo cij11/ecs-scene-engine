@@ -5,17 +5,11 @@
  * executes phases in order, running each system with the world and dt.
  */
 
-export const PHASES = [
-  "preUpdate",
-  "update",
-  "postUpdate",
-  "preRender",
-  "cleanup",
-] as const;
+export const PHASES = ["preUpdate", "update", "postUpdate", "preRender", "cleanup"] as const;
 
-export type Phase = typeof PHASES[number];
+export type Phase = (typeof PHASES)[number];
 
-export type SystemFn = (world: any, dt: number) => void;
+export type SystemFn = (world: object, dt: number) => void;
 
 export interface Pipeline {
   phases: Record<Phase, SystemFn[]>;
@@ -29,19 +23,11 @@ export function createPipeline(): Pipeline {
   return { phases };
 }
 
-export function insertSystem(
-  pipeline: Pipeline,
-  phase: Phase,
-  system: SystemFn,
-): void {
+export function insertSystem(pipeline: Pipeline, phase: Phase, system: SystemFn): void {
   pipeline.phases[phase].push(system);
 }
 
-export function removeSystem(
-  pipeline: Pipeline,
-  phase: Phase,
-  system: SystemFn,
-): boolean {
+export function removeSystem(pipeline: Pipeline, phase: Phase, system: SystemFn): boolean {
   const systems = pipeline.phases[phase];
   const idx = systems.indexOf(system);
   if (idx === -1) return false;
@@ -49,11 +35,7 @@ export function removeSystem(
   return true;
 }
 
-export function tickPipeline(
-  pipeline: Pipeline,
-  world: any,
-  dt: number,
-): void {
+export function tickPipeline(pipeline: Pipeline, world: object, dt: number): void {
   for (const phase of PHASES) {
     const systems = pipeline.phases[phase];
     for (let i = 0; i < systems.length; i++) {

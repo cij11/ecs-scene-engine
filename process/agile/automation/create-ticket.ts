@@ -83,6 +83,10 @@ ${fullName}: ${title}
 
 ## Subtasks
 
+## Stakeholder Understanding
+
+## Demo Accepted
+
 ## Team
 
 ## Started

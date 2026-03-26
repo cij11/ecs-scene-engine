@@ -1,24 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import {
-  createNode,
-  findNodesByType,
-  findRenderingNodes,
-  walkNodes,
-} from "./node.js";
-import {
-  createSceneRegistry,
-  registerScene,
-  getScene,
-  lookupVisualNodes,
-} from "./registry.js";
+import { createNode, findNodesByType, findRenderingNodes, walkNodes } from "./node.js";
+import { createSceneRegistry, registerScene, getScene, lookupVisualNodes } from "./registry.js";
 import { SceneRef } from "../core-components/scene-ref.js";
 import { resetComponentIdCounter } from "../ecs/component.js";
-import {
-  createWorld,
-  addEntity,
-  addComponent,
-  getComponent,
-} from "../ecs/world.js";
+import { createWorld, addEntity, addComponent, getComponent } from "../ecs/world.js";
 
 beforeEach(() => {
   resetComponentIdCounter();
@@ -35,9 +20,7 @@ describe("Node", () => {
   it("creates nested node hierarchies", () => {
     const tree = createNode("node", {}, [
       createNode("transform", { x: 10 }),
-      createNode("renderer", {}, [
-        createNode("mesh", { geometry: "./meshes/ship" }),
-      ]),
+      createNode("renderer", {}, [createNode("mesh", { geometry: "./meshes/ship" })]),
     ]);
     expect(tree.children.length).toBe(2);
     expect(tree.children[1]!.children[0]!.type).toBe("mesh");
@@ -46,9 +29,7 @@ describe("Node", () => {
   it("walks nodes depth-first", () => {
     const tree = createNode("node", {}, [
       createNode("transform"),
-      createNode("renderer", {}, [
-        createNode("mesh"),
-      ]),
+      createNode("renderer", {}, [createNode("mesh")]),
     ]);
 
     const visited: string[] = [];
@@ -61,10 +42,7 @@ describe("Node", () => {
     const tree = createNode("node", {}, [
       createNode("transform"),
       createNode("body"),
-      createNode("renderer", {}, [
-        createNode("mesh"),
-        createNode("light"),
-      ]),
+      createNode("renderer", {}, [createNode("mesh"), createNode("light")]),
     ]);
 
     expect(findNodesByType(tree, "mesh").length).toBe(1);
@@ -89,10 +67,7 @@ describe("Node", () => {
   });
 
   it("returns empty for scene with no renderer", () => {
-    const tree = createNode("node", {}, [
-      createNode("transform"),
-      createNode("body"),
-    ]);
+    const tree = createNode("node", {}, [createNode("transform"), createNode("body")]);
 
     expect(findRenderingNodes(tree)).toEqual([]);
   });
@@ -101,9 +76,7 @@ describe("Node", () => {
 describe("SceneRegistry", () => {
   it("registers and retrieves scenes", () => {
     const registry = createSceneRegistry();
-    const tree = createNode("node", {}, [
-      createNode("transform", { x: 5 }),
-    ]);
+    const tree = createNode("node", {}, [createNode("transform", { x: 5 })]);
 
     const id = registerScene(registry, tree);
     const retrieved = getScene(registry, id);
@@ -123,9 +96,7 @@ describe("SceneRegistry", () => {
     const registry = createSceneRegistry();
     const tree = createNode("node", {}, [
       createNode("transform"),
-      createNode("renderer", {}, [
-        createNode("mesh", { geometry: "./ball" }),
-      ]),
+      createNode("renderer", {}, [createNode("mesh", { geometry: "./ball" })]),
     ]);
 
     const id = registerScene(registry, tree);
@@ -148,9 +119,7 @@ describe("ComponentSceneRef", () => {
     const registry = createSceneRegistry();
 
     const tree = createNode("node", {}, [
-      createNode("renderer", {}, [
-        createNode("mesh", { geometry: "./ship" }),
-      ]),
+      createNode("renderer", {}, [createNode("mesh", { geometry: "./ship" })]),
     ]);
     const sceneId = registerScene(registry, tree);
 

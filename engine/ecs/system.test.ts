@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  createPipeline,
-  insertSystem,
-  removeSystem,
-  tickPipeline,
-} from "./system.js";
+import { createPipeline, insertSystem, removeSystem, tickPipeline } from "./system.js";
 
 describe("Pipeline", () => {
   it("executes systems in phase order", () => {
@@ -37,7 +32,7 @@ describe("Pipeline", () => {
 
   it("passes world and dt to systems", () => {
     const pipeline = createPipeline();
-    let receivedWorld: any;
+    let receivedWorld: unknown;
     let receivedDt: number = 0;
 
     insertSystem(pipeline, "update", (world, dt) => {

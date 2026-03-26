@@ -1,11 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import {
-  createViewSync,
-  syncWorld,
-  Transform,
-} from "./sync.js";
+import { describe, it, expect } from "vitest";
+import { createViewSync, syncWorld, Transform } from "./sync.js";
 import { SceneRef } from "../engine/core-components/scene-ref.js";
-import { resetComponentIdCounter } from "../engine/ecs/component.js";
 import {
   createWorld,
   addEntity,
@@ -16,12 +11,7 @@ import {
 import { getIndex } from "../engine/ecs/entity.js";
 import { createSceneRegistry, registerScene } from "../engine/scene/registry.js";
 import { createNode } from "../engine/scene/node.js";
-import type {
-  Renderer,
-  RenderHandle,
-  RenderObjectParams,
-  RenderTransform,
-} from "./renderer.js";
+import type { Renderer, RenderHandle, RenderObjectParams, RenderTransform } from "./renderer.js";
 
 /** Mock renderer that records all calls */
 function createMockRenderer() {
@@ -67,18 +57,23 @@ describe("View Sync", () => {
     const sync = createViewSync(mock.renderer, sceneRegistry);
 
     const scene = createNode("node", {}, [
-      createNode("renderer", {}, [
-        createNode("mesh", { color: 0xff0000 }),
-      ]),
+      createNode("renderer", {}, [createNode("mesh", { color: 0xff0000 })]),
     ]);
     const sceneId = registerScene(sceneRegistry, scene);
 
     const world = createWorld();
     const e = addEntity(world);
     addComponent(world, e, Transform, {
-      px: 10, py: 20, pz: 30,
-      rx: 0, ry: 0, rz: 0, rw: 1,
-      sx: 1, sy: 1, sz: 1,
+      px: 10,
+      py: 20,
+      pz: 30,
+      rx: 0,
+      ry: 0,
+      rz: 0,
+      rw: 1,
+      sx: 1,
+      sy: 1,
+      sz: 1,
     });
     addComponent(world, e, SceneRef, { sceneId });
 
@@ -95,19 +90,22 @@ describe("View Sync", () => {
     const sceneRegistry = createSceneRegistry();
     const sync = createViewSync(mock.renderer, sceneRegistry);
 
-    const scene = createNode("node", {}, [
-      createNode("renderer", {}, [
-        createNode("mesh"),
-      ]),
-    ]);
+    const scene = createNode("node", {}, [createNode("renderer", {}, [createNode("mesh")])]);
     const sceneId = registerScene(sceneRegistry, scene);
 
     const world = createWorld();
     const e = addEntity(world);
     addComponent(world, e, Transform, {
-      px: 0, py: 0, pz: 0,
-      rx: 0, ry: 0, rz: 0, rw: 1,
-      sx: 1, sy: 1, sz: 1,
+      px: 0,
+      py: 0,
+      pz: 0,
+      rx: 0,
+      ry: 0,
+      rz: 0,
+      rw: 1,
+      sx: 1,
+      sy: 1,
+      sz: 1,
     });
     addComponent(world, e, SceneRef, { sceneId });
 
@@ -132,19 +130,22 @@ describe("View Sync", () => {
     const sceneRegistry = createSceneRegistry();
     const sync = createViewSync(mock.renderer, sceneRegistry);
 
-    const scene = createNode("node", {}, [
-      createNode("renderer", {}, [
-        createNode("mesh"),
-      ]),
-    ]);
+    const scene = createNode("node", {}, [createNode("renderer", {}, [createNode("mesh")])]);
     const sceneId = registerScene(sceneRegistry, scene);
 
     const world = createWorld();
     const e = addEntity(world);
     addComponent(world, e, Transform, {
-      px: 0, py: 0, pz: 0,
-      rx: 0, ry: 0, rz: 0, rw: 1,
-      sx: 1, sy: 1, sz: 1,
+      px: 0,
+      py: 0,
+      pz: 0,
+      rx: 0,
+      ry: 0,
+      rz: 0,
+      rw: 1,
+      sx: 1,
+      sy: 1,
+      sz: 1,
     });
     addComponent(world, e, SceneRef, { sceneId });
 
@@ -166,9 +167,16 @@ describe("View Sync", () => {
     const world = createWorld();
     const e = addEntity(world);
     addComponent(world, e, Transform, {
-      px: 0, py: 0, pz: 0,
-      rx: 0, ry: 0, rz: 0, rw: 1,
-      sx: 1, sy: 1, sz: 1,
+      px: 0,
+      py: 0,
+      pz: 0,
+      rx: 0,
+      ry: 0,
+      rz: 0,
+      rw: 1,
+      sx: 1,
+      sy: 1,
+      sz: 1,
     });
 
     syncWorld(sync, world);
@@ -181,18 +189,23 @@ describe("View Sync", () => {
     const sync = createViewSync(mock.renderer, sceneRegistry);
 
     const scene = createNode("node", {}, [
-      createNode("renderer", {}, [
-        createNode("camera", { projection: "perspective", fov: 90 }),
-      ]),
+      createNode("renderer", {}, [createNode("camera", { projection: "perspective", fov: 90 })]),
     ]);
     const sceneId = registerScene(sceneRegistry, scene);
 
     const world = createWorld();
     const e = addEntity(world);
     addComponent(world, e, Transform, {
-      px: 0, py: 5, pz: 10,
-      rx: 0, ry: 0, rz: 0, rw: 1,
-      sx: 1, sy: 1, sz: 1,
+      px: 0,
+      py: 5,
+      pz: 10,
+      rx: 0,
+      ry: 0,
+      rz: 0,
+      rw: 1,
+      sx: 1,
+      sy: 1,
+      sz: 1,
     });
     addComponent(world, e, SceneRef, { sceneId });
 
@@ -219,9 +232,16 @@ describe("View Sync", () => {
     const world = createWorld();
     const e = addEntity(world);
     addComponent(world, e, Transform, {
-      px: 0, py: 0, pz: 0,
-      rx: 0, ry: 0, rz: 0, rw: 1,
-      sx: 1, sy: 1, sz: 1,
+      px: 0,
+      py: 0,
+      pz: 0,
+      rx: 0,
+      ry: 0,
+      rz: 0,
+      rw: 1,
+      sx: 1,
+      sy: 1,
+      sz: 1,
     });
     addComponent(world, e, SceneRef, { sceneId });
 

@@ -7,9 +7,16 @@
  */
 
 export interface TransformData {
-  px: number; py: number; pz: number;
-  rx: number; ry: number; rz: number; rw: number;
-  sx: number; sy: number; sz: number;
+  px: number;
+  py: number;
+  pz: number;
+  rx: number;
+  ry: number;
+  rz: number;
+  rw: number;
+  sx: number;
+  sy: number;
+  sz: number;
 }
 
 /**
@@ -18,27 +25,38 @@ export interface TransformData {
  * Multiplies parent and child quaternions for rotation.
  * Multiplies scales.
  */
-export function combineTransforms(
-  parent: TransformData,
-  local: TransformData,
-): TransformData {
+export function combineTransforms(parent: TransformData, local: TransformData): TransformData {
   // Rotate local position by parent quaternion
   const rotatedPos = rotateByQuaternion(
-    local.px * parent.sx, local.py * parent.sy, local.pz * parent.sz,
-    parent.rx, parent.ry, parent.rz, parent.rw,
+    local.px * parent.sx,
+    local.py * parent.sy,
+    local.pz * parent.sz,
+    parent.rx,
+    parent.ry,
+    parent.rz,
+    parent.rw,
   );
 
   // Combine quaternions (parent * local)
   const qr = multiplyQuaternions(
-    parent.rx, parent.ry, parent.rz, parent.rw,
-    local.rx, local.ry, local.rz, local.rw,
+    parent.rx,
+    parent.ry,
+    parent.rz,
+    parent.rw,
+    local.rx,
+    local.ry,
+    local.rz,
+    local.rw,
   );
 
   return {
     px: parent.px + rotatedPos.x,
     py: parent.py + rotatedPos.y,
     pz: parent.pz + rotatedPos.z,
-    rx: qr.x, ry: qr.y, rz: qr.z, rw: qr.w,
+    rx: qr.x,
+    ry: qr.y,
+    rz: qr.z,
+    rw: qr.w,
     sx: parent.sx * local.sx,
     sy: parent.sy * local.sy,
     sz: parent.sz * local.sz,
@@ -46,8 +64,13 @@ export function combineTransforms(
 }
 
 function rotateByQuaternion(
-  vx: number, vy: number, vz: number,
-  qx: number, qy: number, qz: number, qw: number,
+  vx: number,
+  vy: number,
+  vz: number,
+  qx: number,
+  qy: number,
+  qz: number,
+  qw: number,
 ): { x: number; y: number; z: number } {
   // q * v * q^-1 (optimised)
   const ix = qw * vx + qy * vz - qz * vy;
@@ -63,8 +86,14 @@ function rotateByQuaternion(
 }
 
 function multiplyQuaternions(
-  ax: number, ay: number, az: number, aw: number,
-  bx: number, by: number, bz: number, bw: number,
+  ax: number,
+  ay: number,
+  az: number,
+  aw: number,
+  bx: number,
+  by: number,
+  bz: number,
+  bw: number,
 ): { x: number; y: number; z: number; w: number } {
   return {
     x: aw * bx + ax * bw + ay * bz - az * by,
