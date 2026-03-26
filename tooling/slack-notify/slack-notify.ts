@@ -116,9 +116,13 @@ interface ThreadState {
   cwd: string;
 }
 
+function sanitiseFilename(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
 function getThreadTs(sessionId: string): string | undefined {
   try {
-    const file = path.join(THREAD_STATE_DIR, `${sessionId}.json`);
+    const file = path.join(THREAD_STATE_DIR, `${sanitiseFilename(sessionId)}.json`);
     const state: ThreadState = JSON.parse(fs.readFileSync(file, "utf-8"));
     return state.thread_ts;
   } catch {
@@ -132,7 +136,7 @@ function saveThreadState(sessionId: string, threadTs: string, cwd: string): void
 
     const state: ThreadState = { session_id: sessionId, thread_ts: threadTs, cwd };
     fs.writeFileSync(
-      path.join(THREAD_STATE_DIR, `${sessionId}.json`),
+      path.join(THREAD_STATE_DIR, `${sanitiseFilename(sessionId)}.json`),
       JSON.stringify(state, null, 2),
       "utf-8",
     );

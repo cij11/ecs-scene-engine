@@ -1,46 +1,37 @@
-import {
-  createWorld,
-  addEntity,
-  addComponent,
-  addSystem,
-  tick,
-  getStore,
-} from "../engine/ecs/world.js";
-import { queryEntities } from "../engine/ecs/query.js";
-import { SceneRef } from "../engine/core-components/scene-ref.js";
+import { addSystem } from "../engine/ecs/world.js";
 import { createSceneRegistry, registerScene } from "../engine/scene/registry.js";
 import { createNode } from "../engine/scene/node.js";
+import { createWorldNode, addChildWorld, tickWorldTree } from "../engine/scene/world-tree.js";
+import { instantiateScene } from "../engine/scene/instantiate.js";
+import { getIndex } from "../engine/ecs/entity.js";
+import { movementSystem } from "../engine/ecs/systems/movement.js";
+
 import { ThreeJSRenderer } from "../view/threejs/index.js";
-import { createViewSync, syncWorld, Transform } from "../view/sync.js";
-import { query } from "../engine/ecs/world.js";
+import { createViewSync, syncWorldTree } from "../view/sync.js";
 
-// --- Scene definitions (static node trees) ---
+import { spaceshipScene, astronautScene } from "../game/toy-ship/scenes.js";
+import { orbitSystem, wanderSystem } from "../game/toy-ship/systems.js";
 
-const cubeScene = createNode("node", {}, [
-  createNode("transform"),
-  createNode("renderer", {}, [
-    createNode("mesh", { color: 0x4488ff, roughness: 0.4, metalness: 0.1 }),
-  ]),
-]);
+// --- Static scene definitions ---
 
 const lightScene = createNode("node", {}, [
-  createNode("transform"),
+  createNode("transform", { position: [10, 10, 10] }),
   createNode("renderer", {}, [
-    createNode("light", { lightType: "point", color: 0xffffff, intensity: 50, range: 100 }),
+    createNode("light", { lightType: "point", color: 0xffffff, intensity: 100, range: 200 }),
   ]),
 ]);
 
 const ambientScene = createNode("node", {}, [
   createNode("transform"),
   createNode("renderer", {}, [
-    createNode("light", { lightType: "ambient", color: 0xffffff, intensity: 0.3 }),
+    createNode("light", { lightType: "ambient", color: 0xffffff, intensity: 0.4 }),
   ]),
 ]);
 
 const cameraScene = createNode("node", {}, [
-  createNode("transform"),
+  createNode("transform", { position: [0, 8, 15] }),
   createNode("renderer", {}, [
-    createNode("camera", { projection: "perspective", fov: 75, near: 0.1, far: 1000 }),
+    createNode("camera", { projection: "perspective", fov: 60, near: 0.1, far: 1000 }),
   ]),
 ]);
 
@@ -53,95 +44,75 @@ async function main() {
   const renderer = new ThreeJSRenderer();
   await renderer.init(container);
 
-  // Register scenes
+  // Scene registry (shared across all worlds)
   const sceneRegistry = createSceneRegistry();
-  const cubeId = registerScene(sceneRegistry, cubeScene);
-  const lightId = registerScene(sceneRegistry, lightScene);
-  const ambientId = registerScene(sceneRegistry, ambientScene);
-  const cameraId = registerScene(sceneRegistry, cameraScene);
+  const shipSceneId = registerScene(sceneRegistry, spaceshipScene);
+  const astronautSceneId = registerScene(sceneRegistry, astronautScene);
+  const lightSceneId = registerScene(sceneRegistry, lightScene);
+  const ambientSceneId = registerScene(sceneRegistry, ambientScene);
+  const cameraSceneId = registerScene(sceneRegistry, cameraScene);
 
-  // Create view sync
+  // --- Space world (root) ---
+  const spaceNode = createWorldNode();
+
+  // Add ship entity at radius 5 from origin
+  const shipEntity = instantiateScene(
+    spaceNode.world, sceneRegistry, spaceshipScene, shipSceneId,
+    { position: [5, 0, 0] },
+  );
+  const shipEntityIdx = getIndex(shipEntity);
+
+  // Add lighting and camera to space world
+  instantiateScene(spaceNode.world, sceneRegistry, lightScene, lightSceneId);
+  instantiateScene(spaceNode.world, sceneRegistry, ambientScene, ambientSceneId);
+  instantiateScene(spaceNode.world, sceneRegistry, cameraScene, cameraSceneId);
+
+  // Space systems
+  addSystem(spaceNode.world, "update", orbitSystem);
+
+  // --- Ship interior world (child of space) ---
+  const interiorNode = createWorldNode();
+  addChildWorld(spaceNode, interiorNode, shipEntityIdx);
+
+  // Spawn 3 astronauts at different positions inside the ship
+  const astronautPositions: [number, number, number][] = [
+    [0, 0, 0],
+    [1, 0, 1],
+    [-1, 0, -1],
+  ];
+
+  for (const pos of astronautPositions) {
+    instantiateScene(
+      interiorNode.world, sceneRegistry, astronautScene, astronautSceneId,
+      { position: pos, velocity: [(Math.random() - 0.5), 0, (Math.random() - 0.5)] },
+    );
+  }
+
+  // Interior systems
+  addSystem(interiorNode.world, "update", movementSystem);
+  addSystem(interiorNode.world, "postUpdate", wanderSystem);
+
+  // --- View sync ---
   const viewSync = createViewSync(renderer, sceneRegistry);
-
-  // Create ECS world
-  const world = createWorld();
-
-  // Spawn a cube entity
-  const cube = addEntity(world);
-  addComponent(world, cube, Transform, {
-    px: 0, py: 0, pz: 0,
-    rx: 0, ry: 0, rz: 0, rw: 1,
-    sx: 1, sy: 1, sz: 1,
-  });
-  addComponent(world, cube, SceneRef, { sceneId: cubeId });
-
-  // Spawn a point light
-  const light = addEntity(world);
-  addComponent(world, light, Transform, {
-    px: 5, py: 5, pz: 5,
-    rx: 0, ry: 0, rz: 0, rw: 1,
-    sx: 1, sy: 1, sz: 1,
-  });
-  addComponent(world, light, SceneRef, { sceneId: lightId });
-
-  // Spawn ambient light
-  const ambient = addEntity(world);
-  addComponent(world, ambient, Transform, {
-    px: 0, py: 0, pz: 0,
-    rx: 0, ry: 0, rz: 0, rw: 1,
-    sx: 1, sy: 1, sz: 1,
-  });
-  addComponent(world, ambient, SceneRef, { sceneId: ambientId });
-
-  // Spawn camera
-  const camera = addEntity(world);
-  addComponent(world, camera, Transform, {
-    px: 0, py: 2, pz: 5,
-    rx: 0, ry: 0, rz: 0, rw: 1,
-    sx: 1, sy: 1, sz: 1,
-  });
-  addComponent(world, camera, SceneRef, { sceneId: cameraId });
-
-  // Add a rotation system — spins the cube
-  const transformStore = getStore(world, Transform)!;
-  const cubeQuery = query(world, [Transform, SceneRef]);
-
-  addSystem(world, "update", (_w, dt) => {
-    // Simple rotation: increment quaternion Y rotation
-    for (const eid of queryEntities(cubeQuery)) {
-      if (eid === 0) { // only rotate the cube (first entity)
-        const angle = dt * 0.5;
-        const cosA = Math.cos(angle / 2);
-        const sinA = Math.sin(angle / 2);
-        // Multiply current quaternion by Y-axis rotation
-        const qx = transformStore.rx[eid]!;
-        const qy = transformStore.ry[eid]!;
-        const qz = transformStore.rz[eid]!;
-        const qw = transformStore.rw[eid]!;
-        transformStore.rx[eid] = qw * 0 + qx * cosA + qy * sinA * 0 - qz * sinA;
-        transformStore.ry[eid] = qw * sinA + qy * cosA + qz * 0 - qx * 0;
-        transformStore.rz[eid] = qw * 0 + qz * cosA + qx * sinA - qy * 0;
-        transformStore.rw[eid] = qw * cosA - qx * 0 - qy * sinA - qz * 0;
-      }
-    }
-  });
 
   // Handle resize
   window.addEventListener("resize", () => {
     renderer.resize(container.clientWidth, container.clientHeight);
   });
 
-  // Game loop
+  // --- Game loop ---
   let lastTime = performance.now();
 
   function loop(now: number) {
     const dt = (now - lastTime) / 1000;
     lastTime = now;
 
-    tick(world, dt);
+    // Tick all worlds root-to-leaf
+    tickWorldTree(spaceNode, dt);
 
+    // Sync all worlds to renderer
     renderer.beginFrame();
-    syncWorld(viewSync, world);
+    syncWorldTree(viewSync, spaceNode);
     renderer.endFrame();
 
     requestAnimationFrame(loop);

@@ -46,3 +46,26 @@ export {
   getIndex,
   getGeneration,
 } from "./ecs/entity.js";
+
+// Core components
+export { Transform } from "./ecs/components/transform.js";
+export { Velocity } from "./ecs/components/velocity.js";
+export { SceneRef } from "./core-components/scene-ref.js";
+
+// Scene
+export {
+  type SceneNode,
+  type NodeType,
+  createNode,
+  findNodesByType,
+  findRenderingNodes,
+  walkNodes,
+} from "./scene/node.js";
+export {
+  type SceneId,
+  type SceneRegistry,
+  createSceneRegistry,
+  registerScene,
+  getScene,
+  lookupVisualNodes,
+} from "./scene/registry.js";

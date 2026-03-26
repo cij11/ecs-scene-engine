@@ -12,10 +12,16 @@
 import { SocketModeClient } from "@slack/socket-mode";
 import { WebClient } from "@slack/web-api";
 import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
 import { getStateByThread, type ThreadState } from "./thread-state.js";
+
+const require = createRequire(import.meta.url);
+const CLAUDE_BIN = path.join(
+  path.dirname(require.resolve("@anthropic-ai/claude-code/package.json")),
+  "cli.js",
+);
 
 const SLACK_APP_TOKEN = process.env.SLACK_APP_TOKEN;
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
@@ -53,7 +59,7 @@ function resumeSession(state: ThreadState, message: string): void {
   activeSessions.add(state.session_id);
   console.log(`Resuming session ${state.session_id} in ${state.cwd}`);
 
-  const child = spawn("claude", ["-r", state.session_id, "-p", message], {
+  const child = spawn("node", [CLAUDE_BIN, "-r", state.session_id, "-p", message], {
     cwd: state.cwd,
     stdio: "inherit",
     env: { ...process.env },
@@ -97,6 +103,12 @@ socketClient.on("message", async ({ event, body, ack }) => {
   // Verify the session's working directory still exists
   if (!fs.existsSync(state.cwd)) {
     await postError(threadTs, `Project directory no longer exists: ${state.cwd}`);
+    return;
+  }
+
+  // Verify cwd is an absolute path and contains a .claude directory (is a Claude project)
+  if (!path.isAbsolute(state.cwd) || !fs.existsSync(path.join(state.cwd, ".claude"))) {
+    await postError(threadTs, "Session working directory is not a valid Claude Code project.");
     return;
   }
 

@@ -20,6 +20,7 @@ export {
   Transform,
   createViewSync,
   syncWorld,
+  syncWorldTree,
   type ViewSync,
 } from "./sync.js";
 

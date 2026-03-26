@@ -22,6 +22,10 @@ export interface ThreadState {
 
 const INDEX_PATH = path.join(THREAD_STATE_DIR, "by-thread.json");
 
+function sanitiseFilename(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
 function ensureDir(): void {
   fs.mkdirSync(THREAD_STATE_DIR, { recursive: true });
 }
@@ -40,7 +44,7 @@ function writeIndex(index: Record<string, string>): void {
 
 export function saveThreadState(state: ThreadState): void {
   ensureDir();
-  const filePath = path.join(THREAD_STATE_DIR, `${state.session_id}.json`);
+  const filePath = path.join(THREAD_STATE_DIR, `${sanitiseFilename(state.session_id)}.json`);
   fs.writeFileSync(filePath, JSON.stringify(state, null, 2), "utf-8");
 
   const index = readIndex();
@@ -50,7 +54,7 @@ export function saveThreadState(state: ThreadState): void {
 
 export function getThreadTsBySession(sessionId: string): string | undefined {
   try {
-    const filePath = path.join(THREAD_STATE_DIR, `${sessionId}.json`);
+    const filePath = path.join(THREAD_STATE_DIR, `${sanitiseFilename(sessionId)}.json`);
     const state: ThreadState = JSON.parse(fs.readFileSync(filePath, "utf-8"));
     return state.thread_ts;
   } catch {
@@ -64,7 +68,7 @@ export function getStateByThread(threadTs: string): ThreadState | undefined {
   if (!sessionId) return undefined;
 
   try {
-    const filePath = path.join(THREAD_STATE_DIR, `${sessionId}.json`);
+    const filePath = path.join(THREAD_STATE_DIR, `${sanitiseFilename(sessionId)}.json`);
     return JSON.parse(fs.readFileSync(filePath, "utf-8")) as ThreadState;
   } catch {
     return undefined;
