@@ -17,8 +17,8 @@ Sections:
 - **Acceptance Criteria**
 - **Testing Scenarios**
 - **Testing Notes**
-- **Size**: In story points. Initially an arbitrary estimate, which will get more accurate over time.
-- **Subtasks**: Tickets get broken down if they are too large.
+- **Size**: In story points. Initially an arbitrary estimate, which will get more accurate over time. When a ticket has subtasks, it has no points of its own — its size is the recursive sum of its subtasks.
+- **Subtasks**: Tickets get broken down if they are too large. Subtask names are suffixed to their parent: e.g. `task-ESE-0001-01`, `task-ESE-0001-02`. Once a subtask gains subtasks of its own, it is promoted to a top-level ticket with the next available number. The old subtask reference in the parent is updated to point to the new ticket.
 - **Started**
 - **Completed**
 - **Blockers**
