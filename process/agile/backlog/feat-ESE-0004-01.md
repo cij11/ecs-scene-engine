@@ -1,5 +1,5 @@
 ## Status
-inDevelopment
+readyForDev
 
 ## Title
 feat-ESE-0004-01: Slack Socket Mode listener for thread replies

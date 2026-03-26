@@ -1,5 +1,5 @@
 ## Status
-refining
+readyForDev
 
 ## Title
 feat-ESE-0004: Slack to Claude Code response integration

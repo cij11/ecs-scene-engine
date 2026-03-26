@@ -2,6 +2,16 @@
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat); FILE=$(echo \"$INPUT\" | sed -n 's/.*\"file_path\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p'); case \"$FILE\" in *settings.local.json|*settings.json|*.env|*.env.*) echo 'BLOCKED: This file may contain secrets. Do not read it.' >&2; exit 2;; esac; exit 0",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "matcher": "Read|Glob|Grep",
         "hooks": [
           {

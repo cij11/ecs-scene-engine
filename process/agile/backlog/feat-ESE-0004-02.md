@@ -1,5 +1,5 @@
 ## Status
-inDevelopment
+readyForDev
 
 ## Title
 feat-ESE-0004-02: Thread-to-session mapping and CLI resume invocation
