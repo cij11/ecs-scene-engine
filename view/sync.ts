@@ -20,12 +20,24 @@ import { combineTransforms, type TransformData } from "../engine/scene/transform
 
 export { Transform };
 
-/** Tracks which entities have been synced to the renderer */
-interface SyncState {
-  /** entity index → list of render handles for that entity */
+/** Tracks which entities have been synced to the renderer, per world */
+interface WorldSyncState {
   entityHandles: Map<number, RenderHandle[]>;
-  /** entity index → camera handle (if entity has a camera node) */
   entityCamera: Map<number, RenderHandle>;
+}
+
+interface SyncState {
+  /** world → per-world sync state */
+  worlds: Map<World, WorldSyncState>;
+}
+
+function getWorldState(state: SyncState, world: World): WorldSyncState {
+  let worldState = state.worlds.get(world);
+  if (!worldState) {
+    worldState = { entityHandles: new Map(), entityCamera: new Map() };
+    state.worlds.set(world, worldState);
+  }
+  return worldState;
 }
 
 export interface ViewSync {
@@ -39,8 +51,7 @@ export function createViewSync(renderer: Renderer, sceneRegistry: SceneRegistry)
     renderer,
     sceneRegistry,
     state: {
-      entityHandles: new Map(),
-      entityCamera: new Map(),
+      worlds: new Map(),
     },
   };
 }
@@ -96,6 +107,7 @@ function syncWorldTreeNode(
  */
 export function syncWorld(sync: ViewSync, world: World, parentTransform?: TransformData): void {
   const { renderer, sceneRegistry, state } = sync;
+  const worldState = getWorldState(state, world);
 
   const q = query(world, [Transform, SceneRef]);
   const entities = queryEntities(q);
@@ -112,7 +124,7 @@ export function syncWorld(sync: ViewSync, world: World, parentTransform?: Transf
     alive.add(entityIdx);
 
     // Create renderer objects if this entity is new
-    if (!state.entityHandles.has(entityIdx)) {
+    if (!worldState.entityHandles.has(entityIdx)) {
       const sceneId = sceneRefStore.sceneId[entityIdx]!;
       const visualNodes = lookupVisualNodes(sceneRegistry, sceneId);
 
@@ -124,12 +136,12 @@ export function syncWorld(sync: ViewSync, world: World, parentTransform?: Transf
           handles.push(handle);
 
           if (params.type === "camera") {
-            state.entityCamera.set(entityIdx, handle);
+            worldState.entityCamera.set(entityIdx, handle);
             renderer.setActiveCamera(handle);
           }
         }
       }
-      state.entityHandles.set(entityIdx, handles);
+      worldState.entityHandles.set(entityIdx, handles);
     }
 
     // Build local transform
@@ -149,20 +161,20 @@ export function syncWorld(sync: ViewSync, world: World, parentTransform?: Transf
     // Apply parent transform offset if in a child world
     const t = parentTransform ? combineTransforms(parentTransform, local) : local;
 
-    const handles = state.entityHandles.get(entityIdx)!;
+    const handles = worldState.entityHandles.get(entityIdx)!;
     for (const handle of handles) {
       renderer.updateTransform(handle, t);
     }
   }
 
   // Remove renderer objects for entities that no longer exist
-  for (const [entityIdx, handles] of state.entityHandles) {
+  for (const [entityIdx, handles] of worldState.entityHandles) {
     if (!alive.has(entityIdx)) {
       for (const handle of handles) {
         renderer.removeObject(handle);
       }
-      state.entityHandles.delete(entityIdx);
-      state.entityCamera.delete(entityIdx);
+      worldState.entityHandles.delete(entityIdx);
+      worldState.entityCamera.delete(entityIdx);
     }
   }
 }

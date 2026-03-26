@@ -10,10 +10,14 @@ describe("Node type handlers", () => {
 
     expect(params).toEqual({
       type: "mesh",
+      geometry: "box",
       geometryRef: "./meshes/ship",
       color: 0xff0000,
       roughness: 0.8,
       metalness: undefined,
+      scaleX: undefined,
+      scaleY: undefined,
+      scaleZ: undefined,
     });
   });
 

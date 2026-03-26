@@ -26,10 +26,17 @@ import * as path from "node:path";
 function parseArgs() {
   const args = process.argv.slice(2);
   const opts: Record<string, string> = {};
-  for (let i = 0; i < args.length; i += 2) {
+  const flags = new Set<string>();
+  for (let i = 0; i < args.length; i++) {
     const key = args[i]?.replace(/^--/, "");
-    const val = args[i + 1];
-    if (key && val) opts[key] = val;
+    const next = args[i + 1];
+    if (!key) continue;
+    if (next && !next.startsWith("--")) {
+      opts[key] = next;
+      i++; // skip value
+    } else {
+      flags.add(key);
+    }
   }
   return {
     duration: parseFloat(opts.duration ?? "5"),
@@ -37,9 +44,10 @@ function parseArgs() {
     width: parseInt(opts.width ?? "400", 10),
     height: parseInt(opts.height ?? "300", 10),
     output: opts.output ?? "tooling/capture/output",
-    url: opts.url ?? "http://localhost:3000",
+    url: opts.url ?? "http://localhost:4000",
     sample: parseInt(opts.sample ?? "5", 10),
     wait: parseFloat(opts.wait ?? "2"),
+    headed: flags.has("headed"),
   };
 }
 
@@ -64,11 +72,17 @@ async function main() {
   console.log(`Output: ${opts.output}`);
 
   const browser = await chromium.launch({
-    args: ["--use-gl=angle", "--use-angle=swiftshader"],
+    headless: !opts.headed,
+    args: ["--use-gl=angle", "--use-angle=default"],
   });
-  const page = await browser.newPage({
+  const context = await browser.newContext({
     viewport: { width: opts.width, height: opts.height },
+    deviceScaleFactor: 1,
   });
+  const page = await context.newPage();
+
+  page.on("console", (msg) => console.log(`  [browser] ${msg.type()}: ${msg.text()}`));
+  page.on("pageerror", (err) => console.error(`  [browser error] ${err.message}`));
 
   await page.goto(opts.url);
   console.log(`Waiting ${opts.wait}s for scene to initialise...`);

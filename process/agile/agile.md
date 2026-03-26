@@ -89,6 +89,7 @@ When transitioning to `validatingDemo`, the following must exist in the ticket's
 1. **demo-expected.json**:
    - `description`: What the demo should show (from the ticket's Demo Deliverable)
    - `durationMs`: Length of the demo in milliseconds
+   - `questions`: Array of questions the validator agent must answer by watching the demo. These are yes/no or short-answer questions derived from the acceptance criteria. Example: "Is there a yellow sphere at the centre of the view?", "Does the blue box orbit the yellow sphere?"
 
 2. **demo-readme.json**:
    - `command`: The command to run the demo and capture screenshots
@@ -100,10 +101,14 @@ When transitioning to `validatingDemo`, the following must exist in the ticket's
 Before transitioning, **demo-actual.json** must exist containing:
 - `screenshots`: Same as demo-readme, plus `screenshotInterpretation` for each frame — what the screenshot shows
 - `videoInterpretation`: What the video shows in aggregate
+- `answers`: Array matching the `questions` from demo-expected.json, each with `{ question, answer, answeredAtFrame }`. The answer is what the validator observed — not what it expects to see.
+- `allQuestionsAnswered`: Boolean — true only when every question has been answered affirmatively based on what was actually observed
 
-The reviewing agent only has access to: the screenshot files, demo-readme.json, and demo-actual.json. It does NOT have access to the source code, ticket description, or acceptance criteria. It must genuinely describe what it sees.
+The reviewing agent only has access to: the screenshot files, demo-readme.json, demo-expected.json (questions only), and demo-actual.json. It does NOT have access to the source code, ticket description, or acceptance criteria. It must genuinely describe what it sees.
 
-The ticket can only move to `humanDemoValidation` once the expected demo (demo-expected.json) matches the actual demo (demo-actual.json).
+The demo may end early once all questions are answered correctly — the validator does not need to review every frame if all questions are resolved.
+
+The ticket can only move to `humanDemoValidation` once all questions are answered affirmatively and the expected demo matches the actual demo.
 
 ### humanDemoValidation
 

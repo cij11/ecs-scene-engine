@@ -15,13 +15,20 @@ export type LightType = "point" | "directional" | "spot" | "ambient";
 /** Camera projection */
 export type CameraProjection = "perspective" | "orthographic";
 
+/** Geometry types the renderer supports */
+export type GeometryType = "box" | "sphere" | "cone" | "arrow";
+
 /** Parameters for creating a mesh object */
 export interface MeshParams {
   type: "mesh";
+  geometry?: GeometryType | undefined;
   geometryRef?: string | undefined;
   color?: number | undefined;
   roughness?: number | undefined;
   metalness?: number | undefined;
+  scaleX?: number | undefined;
+  scaleY?: number | undefined;
+  scaleZ?: number | undefined;
 }
 
 /** Parameters for creating a light object */
@@ -81,6 +88,9 @@ export interface Renderer {
 
   /** Set which camera handle to render from */
   setActiveCamera(handle: RenderHandle): void;
+
+  /** Point an object (typically a camera) at a target position */
+  lookAt(handle: RenderHandle, x: number, y: number, z: number): void;
 
   /** Begin a new frame */
   beginFrame(): void;

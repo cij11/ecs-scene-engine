@@ -7,6 +7,46 @@ const AGILE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 const BACKLOG_DIR = path.join(AGILE_DIR, "backlog");
 const SPRINTS_DIR = path.join(AGILE_DIR, "sprints");
 const ROOT = path.resolve(AGILE_DIR, "..", "..");
+const TICKET_STATUS_PATH = path.join(SPRINTS_DIR, "ticketStatus.json");
+
+interface TicketStatusEntry {
+  filename: string;
+  status: string;
+}
+
+interface TicketStatusFile {
+  tickets: TicketStatusEntry[];
+}
+
+function loadTicketStatus(): TicketStatusFile {
+  if (!fs.existsSync(TICKET_STATUS_PATH)) {
+    return { tickets: [] };
+  }
+  return JSON.parse(fs.readFileSync(TICKET_STATUS_PATH, "utf-8")) as TicketStatusFile;
+}
+
+function saveTicketStatus(data: TicketStatusFile): void {
+  fs.writeFileSync(TICKET_STATUS_PATH, JSON.stringify(data, null, 2) + "\n", "utf-8");
+}
+
+function getTicketFilename(ticketPath: string): string {
+  // Return path relative to sprints/ or backlog/
+  const sprintsIdx = ticketPath.indexOf("sprints/");
+  if (sprintsIdx >= 0) {
+    return ticketPath.slice(sprintsIdx + "sprints/".length);
+  }
+  const backlogIdx = ticketPath.indexOf("backlog/");
+  if (backlogIdx >= 0) {
+    return "backlog/" + ticketPath.slice(backlogIdx + "backlog/".length);
+  }
+  return ticketPath;
+}
+
+function getStatusFromRegistry(name: string): string | null {
+  const data = loadTicketStatus();
+  const entry = data.tickets.find((t) => t.filename.includes(name));
+  return entry?.status ?? null;
+}
 
 const VALID_STATUSES = [
   "draft",
@@ -49,11 +89,7 @@ const REQUIRED_SECTIONS = [
   "Comments",
 ];
 
-/** Allowed backward transitions (status → allowed previous statuses) */
-const BACKWARD_TRANSITIONS: Record<string, string[]> = {
-  inDevelopment: ["inReview"], // code review failed
-  buildingDemo: ["demoValidated", "humanDemoValidation"], // demo rejected
-};
+// Backward transitions are always allowed — gates only apply on the forward path.
 
 function usage(): never {
   console.error(
@@ -158,6 +194,72 @@ function validateReadyForDev(content: string, name: string): string[] {
     if (!demoDeliverable) {
       errors.push("Demo Deliverable is empty — feat tickets must define what the demo should show");
     }
+  }
+
+  return errors;
+}
+
+function validateInReview(ticketPath: string): string[] {
+  const errors: string[] = [];
+  const dir = path.dirname(ticketPath);
+  const reviewPath = path.join(dir, "review.md");
+
+  // For transitioning FROM inReview, review.md must exist and have no severe/critical issues
+  if (!fs.existsSync(reviewPath)) {
+    errors.push("Missing review.md — code review must be documented before proceeding");
+    return errors;
+  }
+
+  const review = fs.readFileSync(reviewPath, "utf-8").toLowerCase();
+
+  if (review.includes("critical")) {
+    errors.push("review.md contains critical issues — these must be resolved before proceeding");
+  }
+
+  if (review.includes("severe")) {
+    errors.push("review.md contains severe issues — these must be resolved before proceeding");
+  }
+
+  return errors;
+}
+
+function validateHumanDemoValidation(ticketPath: string): string[] {
+  const errors: string[] = [];
+  const demoDir = getDemoDir(ticketPath);
+  if (!demoDir) {
+    errors.push("Ticket is not in a sprint");
+    return errors;
+  }
+
+  // Must have passed through validatingDemo — demo-expected.json must exist
+  const expectedPath = path.join(demoDir, "demo-expected.json");
+  if (!fs.existsSync(expectedPath)) {
+    errors.push("Missing demo-expected.json — validatingDemo step was not completed");
+  }
+
+  // Must have passed through demoValidated — demo-actual.json must exist with all answers
+  const actualPath = path.join(demoDir, "demo-actual.json");
+  if (!fs.existsSync(actualPath)) {
+    errors.push("Missing demo-actual.json — demoValidated step was not completed");
+    return errors;
+  }
+
+  try {
+    const actual = JSON.parse(fs.readFileSync(actualPath, "utf-8"));
+
+    if (!actual.allQuestionsAnswered) {
+      errors.push("demo-actual.json: allQuestionsAnswered is not true — agent validation incomplete");
+    }
+
+    if (!actual.demoMatchesExpected) {
+      errors.push("demo-actual.json: demoMatchesExpected is not true — agent has not confirmed demo matches expected");
+    }
+
+    if (!actual.videoInterpretation) {
+      errors.push("demo-actual.json: missing videoInterpretation");
+    }
+  } catch {
+    errors.push("demo-actual.json: invalid JSON");
   }
 
   return errors;
@@ -334,26 +436,18 @@ if (!ticketPath) {
 
 let content = fs.readFileSync(ticketPath, "utf-8");
 
+// Read status from ticketStatus.json (authoritative source)
+const registryStatus = getStatusFromRegistry(ticketName);
 const statusMatch = content.match(/^(## Status\n)(.+)$/m);
-if (!statusMatch) {
-  console.error("Error: could not find Status section in ticket.");
-  process.exit(1);
-}
+const fileStatus = statusMatch?.[2]?.trim() ?? "draft";
+const oldStatus = registryStatus ?? fileStatus;
 
-const oldStatus = statusMatch[2]!.trim();
-
-// Validate transition direction
+// Validate transition direction — backward transitions skip gates
 const oldIdx = VALID_STATUSES.indexOf(oldStatus as (typeof VALID_STATUSES)[number]);
 const newIdx = VALID_STATUSES.indexOf(newStatus as (typeof VALID_STATUSES)[number]);
-if (oldIdx >= 0 && newIdx >= 0 && newIdx < oldIdx) {
-  // Backward transition — check if allowed
-  const allowed = BACKWARD_TRANSITIONS[newStatus];
-  if (!allowed || !allowed.includes(oldStatus)) {
-    console.error(
-      `BLOCKED: ${ticketName} cannot move backward from ${oldStatus} to ${newStatus}. Allowed backward transitions to ${newStatus}: ${allowed?.join(", ") ?? "none"}`,
-    );
-    process.exit(1);
-  }
+const isBackward = oldIdx >= 0 && newIdx >= 0 && newIdx < oldIdx;
+
+if (isBackward) {
   console.log(`  (backward transition: ${oldStatus} → ${newStatus})`);
 }
 
@@ -365,21 +459,24 @@ if (DEMO_STATUSES.has(newStatus) && !isFeatTicket(ticketName)) {
   process.exit(1);
 }
 
-// Run validation gates
+// Run validation gates (only on forward transitions)
 let errors: string[] = [];
 
-switch (newStatus) {
+if (!isBackward) switch (newStatus) {
   case "readyForDev":
     errors = validateReadyForDev(content, ticketName);
     break;
   case "inTesting":
-    errors = validateInTesting();
+    errors = [...validateInReview(ticketPath), ...validateInTesting()];
     break;
   case "validatingDemo":
     errors = validateValidatingDemo(ticketPath);
     break;
   case "demoValidated":
     errors = validateDemoValidated(ticketPath);
+    break;
+  case "humanDemoValidation":
+    errors = validateHumanDemoValidation(ticketPath);
     break;
   case "done":
     errors = validateDone(content, ticketName, ticketPath);
@@ -392,11 +489,19 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-// Apply transition
-content = content.replace(/^(## Status\n).+$/m, `$1${newStatus}`);
-
+// Apply transition — update ticketStatus.json (authoritative)
 const now = new Date().toISOString();
+const ticketFilename = getTicketFilename(ticketPath);
+const statusData = loadTicketStatus();
+const existingEntry = statusData.tickets.find((t) => t.filename === ticketFilename);
+if (existingEntry) {
+  existingEntry.status = newStatus;
+} else {
+  statusData.tickets.push({ filename: ticketFilename, status: newStatus });
+}
+saveTicketStatus(statusData);
 
+// Update ticket file (non-status fields only: Started, Completed, Team)
 if (newStatus === "inDevelopment") {
   if (!content.match(/^## Started\n.+/m)) {
     content = content.replace(/^(## Started\n)$/m, `$1${now}`);
@@ -409,4 +514,16 @@ if (newStatus === "done" && !content.match(/^## Completed\n.+/m)) {
 }
 
 fs.writeFileSync(ticketPath, content, "utf-8");
+
+// Write audit log entry
+const AUDIT_LOG = path.join(AGILE_DIR, "automation", "audit-log.jsonl");
+const auditEntry = JSON.stringify({
+  timestamp: now,
+  ticket: ticketName,
+  from: oldStatus,
+  to: newStatus,
+  team,
+});
+fs.appendFileSync(AUDIT_LOG, auditEntry + "\n", "utf-8");
+
 console.log(`${ticketName}: ${oldStatus} → ${newStatus}`);

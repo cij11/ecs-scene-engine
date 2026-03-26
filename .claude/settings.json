@@ -32,6 +32,19 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // \"\"' | { read -r f; case \"$f\" in *.ts) npm run ci --silent 2>&1 | tail -5;; esac; }",
+            "timeout": 120,
+            "async": true
+          }
+        ]
+      }
+    ],
     "PreCompact": [
       {
         "hooks": [

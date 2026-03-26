@@ -4,34 +4,35 @@ import { createNode } from "../engine/scene/node.js";
 import { createWorldNode, addChildWorld, tickWorldTree } from "../engine/scene/world-tree.js";
 import { instantiateScene } from "../engine/scene/instantiate.js";
 import { getIndex } from "../engine/ecs/entity.js";
-import { movementSystem } from "../engine/ecs/systems/movement.js";
 
 import { ThreeJSRenderer } from "../view/threejs/index.js";
 import { createViewSync, syncWorldTree } from "../view/sync.js";
 
-import { spaceshipScene, astronautScene } from "../game/toy-ship/scenes.js";
-import { orbitSystem, wanderSystem } from "../game/toy-ship/systems.js";
+import { sunScene, spaceshipScene, astronautScene } from "../game/toy-ship/scenes.js";
+import { createOrbitSystem, oscillateSystem } from "../game/toy-ship/systems.js";
 
-// --- Static scene definitions ---
+// --- Static scene definitions (infrastructure: lights, camera) ---
 
 const lightScene = createNode("node", {}, [
-  createNode("transform", { position: [10, 10, 10] }),
+  createNode("transform", { position: [0, 10, 0] }),
   createNode("renderer", {}, [
-    createNode("light", { lightType: "point", color: 0xffffff, intensity: 100, range: 200 }),
+    createNode("light", { lightType: "point", color: 0xffffff, intensity: 500, range: 50 }),
   ]),
 ]);
 
 const ambientScene = createNode("node", {}, [
   createNode("transform"),
   createNode("renderer", {}, [
-    createNode("light", { lightType: "ambient", color: 0xffffff, intensity: 0.4 }),
+    createNode("light", { lightType: "ambient", color: 0xffffff, intensity: 1.5 }),
   ]),
 ]);
 
+// Camera is created directly via the renderer (not through ECS)
+// because top-down lookAt is simpler than computing quaternions
 const cameraScene = createNode("node", {}, [
-  createNode("transform", { position: [0, 8, 15] }),
+  createNode("transform", { position: [0, 20, 0] }),
   createNode("renderer", {}, [
-    createNode("camera", { projection: "perspective", fov: 60, near: 0.1, far: 1000 }),
+    createNode("camera", { projection: "orthographic", near: 0.1, far: 100, zoom: 1 }),
   ]),
 ]);
 
@@ -46,6 +47,7 @@ async function main() {
 
   // Scene registry (shared across all worlds)
   const sceneRegistry = createSceneRegistry();
+  const sunSceneId = registerScene(sceneRegistry, sunScene);
   const shipSceneId = registerScene(sceneRegistry, spaceshipScene);
   const astronautSceneId = registerScene(sceneRegistry, astronautScene);
   const lightSceneId = registerScene(sceneRegistry, lightScene);
@@ -55,41 +57,42 @@ async function main() {
   // --- Space world (root) ---
   const spaceNode = createWorldNode();
 
-  // Add ship entity at radius 5 from origin
+  // Sun at origin (entity 0 in space world — orbit system skips it by using entity index directly)
+  instantiateScene(spaceNode.world, sceneRegistry, sunScene, sunSceneId, {
+    position: [0, 0, 0],
+  });
+
+  // Ship starts at orbit radius on X axis
   const shipEntity = instantiateScene(spaceNode.world, sceneRegistry, spaceshipScene, shipSceneId, {
     position: [5, 0, 0],
   });
   const shipEntityIdx = getIndex(shipEntity);
 
-  // Add lighting and camera to space world
+  // Lighting and camera
   instantiateScene(spaceNode.world, sceneRegistry, lightScene, lightSceneId);
   instantiateScene(spaceNode.world, sceneRegistry, ambientScene, ambientSceneId);
   instantiateScene(spaceNode.world, sceneRegistry, cameraScene, cameraSceneId);
 
-  // Space systems
-  addSystem(spaceNode.world, "update", orbitSystem);
+  // Space systems — orbit the ship entity
+  addSystem(spaceNode.world, "update", createOrbitSystem(shipEntityIdx));
 
   // --- Ship interior world (child of space) ---
   const interiorNode = createWorldNode();
   addChildWorld(spaceNode, interiorNode, shipEntityIdx);
 
-  // Spawn 3 astronauts at different positions inside the ship
-  const astronautPositions: [number, number, number][] = [
-    [0, 0, 0],
-    [1, 0, 1],
-    [-1, 0, -1],
-  ];
+  // Spawn 3 astronauts — one per axis
+  instantiateScene(interiorNode.world, sceneRegistry, astronautScene, astronautSceneId, {
+    position: [0, 0, 0],
+  });
+  instantiateScene(interiorNode.world, sceneRegistry, astronautScene, astronautSceneId, {
+    position: [0, 0, 0],
+  });
+  instantiateScene(interiorNode.world, sceneRegistry, astronautScene, astronautSceneId, {
+    position: [0, 0, 0],
+  });
 
-  for (const pos of astronautPositions) {
-    instantiateScene(interiorNode.world, sceneRegistry, astronautScene, astronautSceneId, {
-      position: pos,
-      velocity: [Math.random() - 0.5, 0, Math.random() - 0.5],
-    });
-  }
-
-  // Interior systems
-  addSystem(interiorNode.world, "update", movementSystem);
-  addSystem(interiorNode.world, "postUpdate", wanderSystem);
+  // Interior system — oscillates each astronaut along its axis
+  addSystem(interiorNode.world, "update", oscillateSystem);
 
   // --- View sync ---
   const viewSync = createViewSync(renderer, sceneRegistry);
@@ -112,6 +115,14 @@ async function main() {
     // Sync all worlds to renderer
     renderer.beginFrame();
     syncWorldTree(viewSync, spaceNode);
+
+    // Point camera down at origin (after sync so camera handle exists)
+    for (const [, worldState] of viewSync.state.worlds) {
+      for (const [, camHandle] of worldState.entityCamera) {
+        renderer.lookAt(camHandle, 0, 0, 0);
+      }
+    }
+
     renderer.endFrame();
 
     requestAnimationFrame(loop);

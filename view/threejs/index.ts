@@ -16,6 +16,7 @@ export class ThreeJSRenderer implements Renderer {
 
   private objects = new Map<RenderHandle, THREE.Object3D>();
   private cameras = new Map<RenderHandle, THREE.Camera>();
+  private baseScale = new Map<RenderHandle, [number, number, number]>();
   private nextHandle: RenderHandle = 1;
 
   async init(target: HTMLElement): Promise<void> {
@@ -25,7 +26,7 @@ export class ThreeJSRenderer implements Renderer {
     target.appendChild(renderer.domElement);
     this.threeRenderer = renderer;
 
-    this.scene.background = new THREE.Color(0x111111);
+    this.scene.background = new THREE.Color(0x1a1a2e);
   }
 
   createObject(params: RenderObjectParams): RenderHandle {
@@ -34,13 +35,56 @@ export class ThreeJSRenderer implements Renderer {
 
     switch (params.type) {
       case "mesh": {
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        let geometry: THREE.BufferGeometry;
+        switch (params.geometry) {
+          case "sphere":
+            geometry = new THREE.SphereGeometry(0.5, 16, 16);
+            break;
+          case "cone":
+            geometry = new THREE.ConeGeometry(0.3, 1, 8);
+            break;
+          case "arrow": {
+            // Arrow: a cone (head) on top of a cylinder (shaft)
+            const group = new THREE.Group();
+            const shaftMat = new THREE.MeshStandardMaterial({
+              color: params.color ?? 0x888888,
+              roughness: params.roughness ?? 0.5,
+              metalness: params.metalness ?? 0.0,
+            });
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6, 8), shaftMat);
+            shaft.position.y = -0.2;
+            const head = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 8), shaftMat);
+            head.position.y = 0.3;
+            group.add(shaft, head);
+            if (params.scaleX || params.scaleY || params.scaleZ) {
+              group.scale.set(params.scaleX ?? 1, params.scaleY ?? 1, params.scaleZ ?? 1);
+            }
+            this.baseScale.set(handle, [
+              params.scaleX ?? 1,
+              params.scaleY ?? 1,
+              params.scaleZ ?? 1,
+            ]);
+            this.objects.set(handle, group);
+            this.scene.add(group);
+            return handle;
+          }
+          case "box":
+          default:
+            geometry = new THREE.BoxGeometry(1, 1, 1);
+            break;
+        }
         const material = new THREE.MeshStandardMaterial({
           color: params.color ?? 0x888888,
           roughness: params.roughness ?? 0.5,
           metalness: params.metalness ?? 0.0,
         });
         obj = new THREE.Mesh(geometry, material);
+        const bsx = params.scaleX ?? 1;
+        const bsy = params.scaleY ?? 1;
+        const bsz = params.scaleZ ?? 1;
+        obj.scale.set(bsx, bsy, bsz);
+        // Store base scale so updateTransform can multiply rather than overwrite
+        this.baseScale.set(handle, [bsx, bsy, bsz]);
         break;
       }
       case "light": {
@@ -103,7 +147,12 @@ export class ThreeJSRenderer implements Renderer {
 
     obj.position.set(t.px, t.py, t.pz);
     obj.quaternion.set(t.rx, t.ry, t.rz, t.rw);
-    obj.scale.set(t.sx, t.sy, t.sz);
+    const base = this.baseScale.get(handle);
+    if (base) {
+      obj.scale.set(t.sx * base[0], t.sy * base[1], t.sz * base[2]);
+    } else {
+      obj.scale.set(t.sx, t.sy, t.sz);
+    }
   }
 
   removeObject(handle: RenderHandle): void {
@@ -112,22 +161,37 @@ export class ThreeJSRenderer implements Renderer {
 
     this.scene.remove(obj);
 
-    if (obj instanceof THREE.Mesh) {
-      obj.geometry.dispose();
-      if (Array.isArray(obj.material)) {
-        obj.material.forEach((m) => m.dispose());
+    const disposeMesh = (mesh: THREE.Mesh) => {
+      mesh.geometry.dispose();
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((m) => m.dispose());
       } else {
-        obj.material.dispose();
+        mesh.material.dispose();
       }
+    };
+
+    if (obj instanceof THREE.Mesh) {
+      disposeMesh(obj);
+    } else if (obj instanceof THREE.Group) {
+      obj.traverse((child) => {
+        if (child instanceof THREE.Mesh) disposeMesh(child);
+      });
     }
 
     this.objects.delete(handle);
+    this.baseScale.delete(handle);
     this.cameras.delete(handle);
   }
 
   setActiveCamera(handle: RenderHandle): void {
     const cam = this.cameras.get(handle);
     if (cam) this.activeCamera = cam;
+  }
+
+  lookAt(handle: RenderHandle, x: number, y: number, z: number): void {
+    const obj = this.objects.get(handle);
+    if (!obj) return;
+    obj.lookAt(x, y, z);
   }
 
   beginFrame(): void {

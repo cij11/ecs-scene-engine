@@ -4,7 +4,7 @@
  */
 
 import type { SceneNode } from "../engine/scene/node.js";
-import type { RenderObjectParams } from "./renderer.js";
+import type { GeometryType, RenderObjectParams } from "./renderer.js";
 
 export type NodeHandler = (node: SceneNode) => RenderObjectParams | null;
 
@@ -26,10 +26,14 @@ registerNodeHandler(
   "mesh",
   (node): RenderObjectParams => ({
     type: "mesh",
+    geometry: (node.data.geometryType as GeometryType | undefined) ?? "box",
     geometryRef: node.data.geometry as string | undefined,
     color: node.data.color as number | undefined,
     roughness: node.data.roughness as number | undefined,
     metalness: node.data.metalness as number | undefined,
+    scaleX: node.data.scaleX as number | undefined,
+    scaleY: node.data.scaleY as number | undefined,
+    scaleZ: node.data.scaleZ as number | undefined,
   }),
 );
 

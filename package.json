@@ -12,7 +12,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "dev": "vite",
+    "dev": "lsof -ti:4000 | xargs kill -9 2>/dev/null; vite",
     "build": "vite build",
     "ci": "bash tooling/ci.sh",
     "lint": "eslint \"engine/**/*.ts\" \"view/**/*.ts\" \"game/**/*.ts\" \"browser/**/*.ts\"",
@@ -30,6 +30,7 @@
     "sprint:complete": "npx tsx process/agile/automation/complete-sprint.ts",
     "sprint:return": "npx tsx process/agile/automation/return-to-backlog.ts",
     "sprint:velocity": "npx tsx process/agile/automation/velocity-report.ts",
+    "ticket:validate": "npx tsx process/agile/automation/validate-tickets.ts",
     "capture": "npx tsx tooling/capture/capture.ts"
   },
   "repository": {

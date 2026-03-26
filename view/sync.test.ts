@@ -37,6 +37,7 @@ function createMockRenderer() {
     setActiveCamera(handle) {
       activeCam = handle;
     },
+    lookAt() {},
     beginFrame() {},
     endFrame() {},
     resize() {},
