@@ -16,6 +16,10 @@ task-ESE-0001: Architect project
 
 ## Subtasks
 
+## Started
+
+## Completed
+
 ## Blockers
 
 ## Knowledge Gaps
