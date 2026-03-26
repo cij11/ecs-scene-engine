@@ -1,5 +1,5 @@
 ## Status
-readyForDev
+done
 
 ## Title
 task-ESE-0001-03: Define lazy ECS strategy
@@ -26,9 +26,9 @@ Documentation ticket. Validation by review.
 ## Subtasks
 
 ## Started
-
+2026-03-26T05:29:23.991Z
 ## Completed
-
+2026-03-26T05:30:15.294Z
 ## Blockers
 - task-ESE-0001-02 (need scene tree model first)
 

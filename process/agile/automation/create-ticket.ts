@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const AGILE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const BACKLOG_DIR = path.join(AGILE_DIR, "backlog");
+const SPRINTS_DIR = path.join(AGILE_DIR, "sprints");
 
 function usage(): never {
   console.error("Usage: npx tsx process/agile/automation/create-ticket.ts <type> <title> [parent]");
@@ -23,7 +24,20 @@ if (!["feat", "bugfix", "task"].includes(type)) {
   process.exit(1);
 }
 
-const files = fs.readdirSync(BACKLOG_DIR).filter(f => f.endsWith(".md") && f !== "backlog.md");
+function collectTicketFiles(): string[] {
+  const backlogFiles = fs.readdirSync(BACKLOG_DIR).filter(f => f.endsWith(".md") && f !== "backlog.md");
+  const sprintDirs = fs.existsSync(SPRINTS_DIR)
+    ? fs.readdirSync(SPRINTS_DIR, { withFileTypes: true })
+        .filter(d => d.isDirectory())
+        .flatMap(d =>
+          fs.readdirSync(path.join(SPRINTS_DIR, d.name))
+            .filter(f => f.endsWith(".md") && !f.startsWith("sprint_"))
+        )
+    : [];
+  return [...backlogFiles, ...sprintDirs];
+}
+
+const files = collectTicketFiles();
 
 let ticketId: string;
 

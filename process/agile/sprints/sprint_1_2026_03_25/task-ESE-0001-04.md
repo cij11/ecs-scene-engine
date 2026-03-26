@@ -1,5 +1,5 @@
 ## Status
-readyForDev
+done
 
 ## Title
 task-ESE-0001-04: Define engine module structure and public API surface
@@ -25,9 +25,9 @@ Documentation ticket. Validation by review.
 ## Subtasks
 
 ## Started
-
+2026-03-26T05:30:59.274Z
 ## Completed
-
+2026-03-26T05:31:47.691Z
 ## Blockers
 - task-ESE-0001-02 (need scene tree model)
 - task-ESE-0001-03 (need lazy ECS strategy)

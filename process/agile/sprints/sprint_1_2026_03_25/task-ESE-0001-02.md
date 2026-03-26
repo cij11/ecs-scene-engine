@@ -1,5 +1,5 @@
 ## Status
-inDevelopment
+done
 
 ## Title
 task-ESE-0001-02: Define scene tree architecture
@@ -29,7 +29,7 @@ Documentation ticket. Validation by review.
 ## Started
 2026-03-26T05:24:14.916Z
 ## Completed
-
+2026-03-26T05:28:54.233Z
 ## Blockers
 - task-ESE-0001-01 (need core ECS abstractions first)
 
