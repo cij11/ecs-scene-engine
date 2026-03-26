@@ -1,5 +1,5 @@
 ## Status
-readyForDev
+done
 
 ## Title
 feat-ESE-0003-07: Implement World
@@ -28,9 +28,9 @@ Integration tests in engine/ecs/world.test.ts
 ## Subtasks
 
 ## Started
-
+2026-03-26T06:01:45.055Z
 ## Completed
-
+2026-03-26T06:04:27.230Z
 ## Blockers
 - feat-ESE-0003-01 through feat-ESE-0003-06
 

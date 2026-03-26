@@ -2,17 +2,29 @@
  * Slack notification hook for Claude Code.
  * Sends conversation context to Slack when an agent stops or needs input.
  *
- * Required env var: SLACK_WEBHOOK_URL
+ * Supports two modes:
+ *   1. Bot token (threaded): SLACK_BOT_TOKEN + SLACK_CHANNEL
+ *      Each agent session gets its own thread.
+ *   2. Webhook (simple):     SLACK_WEBHOOK_URL
+ *      Each notification is a standalone message.
+ *
+ * Bot token mode is preferred. Falls back to webhook if token is not set.
  */
 
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import * as readline from "node:readline";
 
+const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
+const SLACK_CHANNEL = process.env.SLACK_CHANNEL;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
-if (!SLACK_WEBHOOK_URL) process.exit(0);
+
+const useBot = !!(SLACK_BOT_TOKEN && SLACK_CHANNEL);
+if (!useBot && !SLACK_WEBHOOK_URL) process.exit(0);
 
 const MAX_CONTEXT_CHARS = 3800;
+const THREAD_STATE_DIR = path.join(os.tmpdir(), "claude-slack-threads");
 
 interface HookInput {
   hook_event_name?: string;
@@ -22,10 +34,20 @@ interface HookInput {
   last_assistant_message?: string;
 }
 
-interface TranscriptLine {
-  type?: string;
+interface ContentBlock {
+  type: string;
+  text?: string;
   content?: string;
-  message?: string;
+  name?: string;
+  input?: Record<string, unknown>;
+}
+
+interface TranscriptEntry {
+  type?: string;
+  message?: {
+    role?: string;
+    content?: ContentBlock[] | string;
+  };
 }
 
 async function readStdin(): Promise<string> {
@@ -33,6 +55,26 @@ async function readStdin(): Promise<string> {
   const lines: string[] = [];
   for await (const line of rl) lines.push(line);
   return lines.join("\n");
+}
+
+function summariseContent(content: ContentBlock[] | string | undefined): string | null {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return null;
+
+  const parts: string[] = [];
+  for (const block of content) {
+    if (block.type === "text" && block.text) {
+      parts.push(block.text);
+    } else if (block.type === "tool_use" && block.name) {
+      parts.push(`[${block.name}]`);
+    } else if (block.type === "tool_result") {
+      const result = typeof block.content === "string"
+        ? block.content.slice(0, 200)
+        : "[result]";
+      parts.push(result);
+    }
+  }
+  return parts.length > 0 ? parts.join(" ") : null;
 }
 
 function extractContext(input: HookInput): string {
@@ -44,10 +86,13 @@ function extractContext(input: HookInput): string {
     const messages: string[] = [];
     for (const line of recent) {
       try {
-        const entry: TranscriptLine = JSON.parse(line);
-        if (entry.type === "assistant" || entry.type === "user") {
-          const content = entry.content ?? entry.message ?? "[tool use]";
-          messages.push(`${entry.type.toUpperCase()}: ${content}`);
+        const entry: TranscriptEntry = JSON.parse(line);
+        const role = entry.type ?? entry.message?.role;
+        if (role === "assistant" || role === "user") {
+          const text = summariseContent(entry.message?.content);
+          if (text) {
+            messages.push(`${role.toUpperCase()}: ${text}`);
+          }
         }
       } catch {
         // skip malformed lines
@@ -63,6 +108,104 @@ function extractContext(input: HookInput): string {
   }
 
   return "(no context available)";
+}
+
+function getThreadTs(sessionId: string): string | undefined {
+  try {
+    const file = path.join(THREAD_STATE_DIR, `${sessionId}.txt`);
+    return fs.readFileSync(file, "utf-8").trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function saveThreadTs(sessionId: string, ts: string): void {
+  try {
+    fs.mkdirSync(THREAD_STATE_DIR, { recursive: true });
+    fs.writeFileSync(path.join(THREAD_STATE_DIR, `${sessionId}.txt`), ts, "utf-8");
+  } catch {
+    // best effort
+  }
+}
+
+function buildBlocks(emoji: string, title: string, project: string, sessionId: string, context: string) {
+  return [
+    {
+      type: "header",
+      text: { type: "plain_text", text: `${emoji} ${title}`, emoji: true },
+    },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*Project:*\n${project}` },
+        { type: "mrkdwn", text: `*Session:*\n${sessionId.slice(0, 12)}` },
+      ],
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*Recent context:*\n\`\`\`${context}\`\`\``,
+      },
+    },
+  ];
+}
+
+async function postWithBot(blocks: unknown[], sessionId: string): Promise<void> {
+  const threadTs = getThreadTs(sessionId);
+
+  const body: Record<string, unknown> = {
+    channel: SLACK_CHANNEL,
+    blocks,
+    unfurl_links: false,
+  };
+  if (threadTs) {
+    body.thread_ts = threadTs;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+
+  try {
+    const res = await fetch("https://slack.com/api/chat.postMessage", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    if (!threadTs) {
+      const data = (await res.json()) as { ok?: boolean; ts?: string };
+      if (data.ok && data.ts) {
+        saveThreadTs(sessionId, data.ts);
+      }
+    }
+  } catch {
+    // fail gracefully
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function postWithWebhook(blocks: unknown[]): Promise<void> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+
+  try {
+    await fetch(SLACK_WEBHOOK_URL!, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ blocks }),
+      signal: controller.signal,
+    });
+  } catch {
+    // fail gracefully
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function main() {
@@ -95,44 +238,12 @@ async function main() {
   }
 
   const context = extractContext(input);
+  const blocks = buildBlocks(emoji, title, project, sessionId, context);
 
-  const payload = {
-    blocks: [
-      {
-        type: "header",
-        text: { type: "plain_text", text: `${emoji} ${title}`, emoji: true },
-      },
-      {
-        type: "section",
-        fields: [
-          { type: "mrkdwn", text: `*Project:*\n${project}` },
-          { type: "mrkdwn", text: `*Session:*\n${sessionId.slice(0, 12)}` },
-        ],
-      },
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `*Recent context:*\n\`\`\`${context}\`\`\``,
-        },
-      },
-    ],
-  };
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10_000);
-
-  try {
-    await fetch(SLACK_WEBHOOK_URL!, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-  } catch {
-    // fail gracefully
-  } finally {
-    clearTimeout(timeout);
+  if (useBot) {
+    await postWithBot(blocks, sessionId);
+  } else {
+    await postWithWebhook(blocks);
   }
 }
 

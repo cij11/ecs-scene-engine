@@ -1,5 +1,5 @@
 ## Status
-readyForDev
+done
 
 ## Title
 feat-ESE-0003-08: Export public API from engine/index.ts
@@ -24,9 +24,9 @@ Smoke test in engine/index.test.ts
 ## Subtasks
 
 ## Started
-
+2026-03-26T06:04:28.816Z
 ## Completed
-
+2026-03-26T06:05:14.249Z
 ## Blockers
 - feat-ESE-0003-07 (needs all modules to exist)
 

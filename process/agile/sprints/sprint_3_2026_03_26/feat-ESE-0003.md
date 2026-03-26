@@ -1,5 +1,5 @@
 ## Status
-inDevelopment
+done
 
 ## Title
 feat-ESE-0003: Create ECS core abstractions
@@ -50,7 +50,7 @@ Sum of subtasks (8)
 ## Started
 2026-03-26T05:51:47.897Z
 ## Completed
-
+2026-03-26T06:05:15.631Z
 ## Blockers
 
 ## Knowledge Gaps

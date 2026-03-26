@@ -83,6 +83,8 @@ ${fullName}: ${title}
 
 ## Subtasks
 
+## Team
+
 ## Started
 
 ## Completed

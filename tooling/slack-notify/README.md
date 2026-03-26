@@ -1,22 +1,38 @@
 # Slack Notify
 
-Claude Code hook that sends Slack notifications when an agent finishes or needs input.
+Claude Code hook that sends Slack notifications when an agent finishes or needs input. Supports threaded messages so each agent session gets its own conversation thread.
 
 ## Setup
 
-### 1. Create a Slack App
+### Option A: Bot token (recommended — enables threading)
 
-1. Go to https://api.slack.com/apps
-2. Click **Create New App** > **From scratch**
-3. Name it (e.g. "Claude Code Notify"), select your workspace
-4. In the sidebar, click **Incoming Webhooks** > toggle **On**
-5. Click **Add New Webhook to Workspace**
-6. Select the channel or DM where you want notifications
-7. Copy the webhook URL (starts with `https://hooks.slack.com/services/...`)
+1. Go to https://api.slack.com/apps and select your app (or create one)
+2. Sidebar > **OAuth & Permissions**
+3. Under **Bot Token Scopes**, add `chat:write`
+4. Click **Install to Workspace** (or **Reinstall** if already installed)
+5. Copy the **Bot User OAuth Token** (starts with `xoxb-...`)
+6. Invite the bot to your channel: `/invite @YourBotName` in Slack
+7. Get the channel ID: right-click the channel name > **View channel details** > copy the ID at the bottom
 
-### 2. Configure the webhook URL
+Add to `.claude/settings.local.json` (not committed to git):
 
-Add the URL to `.claude/settings.local.json` (not committed to git):
+```json
+{
+  "env": {
+    "SLACK_BOT_TOKEN": "xoxb-your-token-here",
+    "SLACK_CHANNEL": "C0123456789"
+  }
+}
+```
+
+### Option B: Webhook (simple — no threading)
+
+1. Go to https://api.slack.com/apps and select your app
+2. Sidebar > **Incoming Webhooks** > toggle **On**
+3. **Add New Webhook to Workspace** > pick your channel
+4. Copy the webhook URL
+
+Add to `.claude/settings.local.json`:
 
 ```json
 {
@@ -26,14 +42,14 @@ Add the URL to `.claude/settings.local.json` (not committed to git):
 }
 ```
 
-### 3. Verify
+### Verify
 
-The hooks are already configured in `.claude/settings.json`. Once the webhook URL is set, notifications will be sent automatically when:
+The hooks are already configured in `.claude/settings.json`. Once configured, notifications are sent automatically when:
 
-- **Agent finishes** — you'll see a message with the recent conversation context
-- **Agent needs input** — you'll get a prompt to check your IDE
+- **Agent finishes** — a message with recent conversation context
+- **Agent needs input** — a prompt to check your IDE
 
-If `SLACK_WEBHOOK_URL` is not set, the hook silently does nothing.
+If no Slack env vars are set, the hook silently does nothing.
 
 ## How it works
 
@@ -42,6 +58,8 @@ The script is invoked by Claude Code hooks on `Stop` and `Notification` events. 
 1. Reads hook JSON from stdin
 2. Parses the session transcript for recent conversation context
 3. Formats a Slack Block Kit message with project name, session ID, and context
-4. POSTs to the configured webhook URL
+4. Posts to Slack via bot API or webhook
+
+In bot token mode, each agent session's first notification creates a new message. Subsequent notifications for the same session reply in that message's thread. Thread state is stored in temp files (`$TMPDIR/claude-slack-threads/`).
 
 Failures are swallowed silently so they never disrupt the agent session.

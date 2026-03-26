@@ -19,6 +19,7 @@ Sections:
 - **Testing Notes**
 - **Size**: In story points. Initially an arbitrary estimate, which will get more accurate over time. When a ticket has subtasks, it has no points of its own — its size is the recursive sum of its subtasks.
 - **Subtasks**: Tickets get broken down if they are too large. Subtask names are suffixed to their parent: e.g. `task-ESE-0001-01`, `task-ESE-0001-02`. Once a subtask gains subtasks of its own, it is promoted to a top-level ticket with the next available number. The old subtask reference in the parent is updated to point to the new ticket.
+- **Team**: The session ID of the agent working on the ticket.
 - **Started**
 - **Completed**
 - **Blockers**
@@ -47,11 +48,15 @@ This registers the sprint in `sprints.csv` with the ticket list and estimated po
 
 ### Completing a sprint
 
-Run `npm run sprint:complete -- <sprint_name>`. This:
-
-1. Calculates actual hours from Started/Completed timestamps on tickets
-2. Updates `sprints.csv` with status `complete` and actual hours
-3. Appends a row to `velocity.csv` with completed points, total points, and hours
+1. **Demo**: Present the sprint's work to stakeholders. Each sprint has a `demo/` folder containing:
+   - `demo.md` — demo script, key features highlighted, stakeholder Q&A notes
+   - Test files demonstrating the sprint's deliverables
+   - Presentations or multimedia supporting the demo
+   - QA outcomes (what was tested, what passed, any issues found)
+2. **Close**: Run `npm run sprint:complete -- <sprint_name>`. This:
+   - Calculates actual hours from Started/Completed timestamps on tickets
+   - Updates `sprints.csv` with status `complete` and actual hours
+   - Appends a row to `velocity.csv` with completed points, total points, and hours
 
 Incomplete tickets should be returned to the backlog before completing the sprint, or they will count as unfinished points.
 

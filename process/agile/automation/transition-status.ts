@@ -17,6 +17,7 @@ function usage(): never {
 
 const ticketName = process.argv[2];
 const newStatus = process.argv[3];
+const team = process.argv[4] ?? process.env.CLAUDE_SESSION_ID ?? "unknown";
 
 if (!ticketName || !newStatus) usage();
 if (!VALID_STATUSES.includes(newStatus as typeof VALID_STATUSES[number])) {
@@ -57,8 +58,12 @@ content = content.replace(/^(## Status\n).+$/m, `$1${newStatus}`);
 
 const now = new Date().toISOString();
 
-if (newStatus === "inDevelopment" && !content.match(/^## Started\n.+/m)) {
-  content = content.replace(/^(## Started\n)$/m, `$1${now}`);
+if (newStatus === "inDevelopment") {
+  if (!content.match(/^## Started\n.+/m)) {
+    content = content.replace(/^(## Started\n)$/m, `$1${now}`);
+  }
+  // Set team to current agent session
+  content = content.replace(/^(## Team\n).*$/m, `$1${team}`);
 }
 
 if (newStatus === "done" && !content.match(/^## Completed\n.+/m)) {

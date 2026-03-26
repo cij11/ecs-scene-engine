@@ -1,4 +1,4 @@
 name,status,tickets,estimate,hours
 sprint_1_2026_03_25,complete,task-ESE-0001|task-ESE-0001-01|task-ESE-0001-02|task-ESE-0001-03|task-ESE-0001-04|task-ESE-0001-05|task-ESE-0001-06|task-ESE-0001-07|task-ESE-0001-08,8,0.37
 sprint_2_2026_03_26,active,feat-ESE-0002-01|feat-ESE-0002-02|feat-ESE-0002-03|feat-ESE-0002,10,
-sprint_3_2026_03_26,active,feat-ESE-0003-01|feat-ESE-0003-02|feat-ESE-0003-03|feat-ESE-0003-04|feat-ESE-0003-05|feat-ESE-0003-06|feat-ESE-0003-07|feat-ESE-0003-08|feat-ESE-0003,10,
+sprint_3_2026_03_26,complete,feat-ESE-0003-01|feat-ESE-0003-02|feat-ESE-0003-03|feat-ESE-0003-04|feat-ESE-0003-05|feat-ESE-0003-06|feat-ESE-0003-07|feat-ESE-0003-08|feat-ESE-0003,10,0.16
