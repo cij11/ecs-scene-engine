@@ -7,7 +7,10 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "vite",
+    "build": "vite build",
     "ticket:create": "npx tsx process/agile/automation/create-ticket.ts",
     "ticket:status": "npx tsx process/agile/automation/transition-status.ts",
     "ticket:points": "npx tsx process/agile/automation/sum-points.ts",
