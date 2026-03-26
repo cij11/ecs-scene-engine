@@ -31,10 +31,51 @@ Each time we pick up a ticket, we log the timestamp we started working on it, an
 
 ## Sprint Lifecycle
 
-At the beginning of a sprint, we run `sprintStart.sh`. This sums the points in the tickets in the sprint and adds a row to `sprints.csv`, which contains the following columns:
+### Starting a sprint
+
+1. Create the sprint: `npm run sprint:create -- <sprint_name>`
+2. Add tickets: `npm run sprint:add -- <ticket> <sprint_name>`
+3. Start the sprint: `npm run sprint:start -- <sprint_name>`
+
+This registers the sprint in `sprints.csv` with the ticket list and estimated points.
+
+### During a sprint
+
+- Pick up a ticket: `npm run ticket:status -- <ticket> inDevelopment`
+- Complete a ticket: `npm run ticket:status -- <ticket> done`
+- Return an incomplete ticket to backlog: `npm run sprint:return -- <ticket> <sprint_name>`
+
+### Completing a sprint
+
+Run `npm run sprint:complete -- <sprint_name>`. This:
+
+1. Calculates actual hours from Started/Completed timestamps on tickets
+2. Updates `sprints.csv` with status `complete` and actual hours
+3. Appends a row to `velocity.csv` with completed points, total points, and hours
+
+Incomplete tickets should be returned to the backlog before completing the sprint, or they will count as unfinished points.
+
+### Velocity tracking
+
+Run `npm run sprint:velocity` to see a report of all completed sprints, including:
+- Points delivered per sprint
+- Hours per sprint
+- Average velocity (points/sprint, points/hour)
+
+Velocity data is stored in `sprints/velocity.csv`:
+
+```
+sprint,completed_points,total_points,completed_tickets,total_tickets,hours
+```
+
+### Sprint CSV
+
+`sprints/sprints.csv` tracks all sprints:
 
 ```
 name,status,tickets,estimate,hours
 ```
 
-At the completion of a sprint, we consult the tickets from the sprint and fill in the actual hours.
+- `tickets` is a `|`-delimited list of ticket names
+- `estimate` is the total story points at sprint start
+- `hours` is filled in at sprint completion

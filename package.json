@@ -6,6 +6,9 @@
   "directories": {
     "doc": "docs"
   },
+  "workspaces": [
+    "tooling/slack-notify"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
@@ -18,7 +21,10 @@
     "ticket:promote": "npx tsx process/agile/automation/promote-subtask.ts",
     "sprint:create": "npx tsx process/agile/automation/create-sprint.ts",
     "sprint:add": "npx tsx process/agile/automation/add-to-sprint.ts",
-    "sprint:start": "npx tsx process/agile/automation/start-sprint.ts"
+    "sprint:start": "npx tsx process/agile/automation/start-sprint.ts",
+    "sprint:complete": "npx tsx process/agile/automation/complete-sprint.ts",
+    "sprint:return": "npx tsx process/agile/automation/return-to-backlog.ts",
+    "sprint:velocity": "npx tsx process/agile/automation/velocity-report.ts"
   },
   "repository": {
     "type": "git",
