@@ -1,5 +1,5 @@
 ## Status
-draft
+readyForDev
 
 ## Title
 task-ESE-0001-06: Define view layer and rendering integration

@@ -1,5 +1,5 @@
 ## Status
-draft
+done
 
 ## Title
 task-ESE-0001-01: Define ECS core abstractions
@@ -25,9 +25,9 @@ Documentation ticket. Validation by review.
 ## Subtasks
 
 ## Started
-
+2026-03-26T05:16:23.815Z
 ## Completed
-
+2026-03-26T05:23:38.662Z
 ## Blockers
 
 ## Knowledge Gaps

@@ -1,5 +1,5 @@
 ## Status
-draft
+inDevelopment
 
 ## Title
 task-ESE-0001-02: Define scene tree architecture
@@ -27,7 +27,7 @@ Documentation ticket. Validation by review.
 ## Subtasks
 
 ## Started
-
+2026-03-26T05:24:14.916Z
 ## Completed
 
 ## Blockers

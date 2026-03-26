@@ -13,7 +13,9 @@
     "ticket:points": "npx tsx process/agile/automation/sum-points.ts",
     "ticket:move": "npx tsx process/agile/automation/move-to-sprint.ts",
     "ticket:promote": "npx tsx process/agile/automation/promote-subtask.ts",
-    "sprint:start": "bash process/agile/sprints/sprintStart.sh"
+    "sprint:create": "npx tsx process/agile/automation/create-sprint.ts",
+    "sprint:add": "npx tsx process/agile/automation/add-to-sprint.ts",
+    "sprint:start": "npx tsx process/agile/automation/start-sprint.ts"
   },
   "repository": {
     "type": "git",

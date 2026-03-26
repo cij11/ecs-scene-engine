@@ -1,5 +1,5 @@
 ## Status
-draft
+readyForDev
 
 ## Title
 task-ESE-0001-08: Choose build tooling and test framework
