@@ -1,0 +1,1 @@
+Insights from Spring (Recoil). An open-source RTS engine powering games like Beyond All Reason, useful for studying simulation engines, deterministic lockstep networking, and large-scale unit management.

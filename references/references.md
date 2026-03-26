@@ -1,0 +1,1 @@
+Reference projects. External projects pulled for study and inspiration. Each referenced project has an origin/ directory (the project itself, gitignored) and an insights/ directory (takeaways and notes, committed).
