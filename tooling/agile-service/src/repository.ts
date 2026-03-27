@@ -56,15 +56,66 @@ export class Repository {
     return crypto.randomUUID();
   }
 
+  ticketFilename(ticket: Ticket): string {
+    const slug = this.slugify(ticket.title);
+    return slug ? `${ticket.name}-${slug}.json` : `${ticket.name}.json`;
+  }
+
+  private slugify(title: string): string {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 50);
+  }
+
   saveTicket(ticket: Ticket): void {
-    const filePath = path.join(this.ticketsDir, `${ticket.id}.json`);
+    // Remove old file if name/title changed (different filename)
+    this.removeTicketFileByName(ticket.name);
+    const filePath = path.join(this.ticketsDir, this.ticketFilename(ticket));
     fs.writeFileSync(filePath, JSON.stringify(ticket, null, 2) + "\n", "utf-8");
   }
 
   loadTicket(id: string): Ticket | null {
-    const filePath = path.join(this.ticketsDir, `${id}.json`);
-    if (!fs.existsSync(filePath)) return null;
-    return JSON.parse(fs.readFileSync(filePath, "utf-8")) as Ticket;
+    // Scan files for matching UUID
+    if (!fs.existsSync(this.ticketsDir)) return null;
+    for (const f of fs.readdirSync(this.ticketsDir)) {
+      if (!f.endsWith(".json")) continue;
+      const content = fs.readFileSync(
+        path.join(this.ticketsDir, f),
+        "utf-8",
+      );
+      const ticket = JSON.parse(content) as Ticket;
+      if (ticket.id === id) return ticket;
+    }
+    return null;
+  }
+
+  loadTicketByName(name: string): Ticket | null {
+    if (!fs.existsSync(this.ticketsDir)) return null;
+    for (const f of fs.readdirSync(this.ticketsDir)) {
+      if (!f.endsWith(".json")) continue;
+      // Match: name-slug.json or name.json, but NOT name-01-slug.json (subtask)
+      if (f === `${name}.json` || this.filenameMatchesName(f, name)) {
+        const content = fs.readFileSync(
+          path.join(this.ticketsDir, f),
+          "utf-8",
+        );
+        return JSON.parse(content) as Ticket;
+      }
+    }
+    return null;
+  }
+
+  private filenameMatchesName(filename: string, name: string): boolean {
+    // filename is e.g. "task-ESE-0001-some-slug.json"
+    // name is e.g. "task-ESE-0001"
+    // Must match the name prefix followed by a slug (lowercase letter), not a subtask number (digit)
+    const withoutExt = filename.replace(/\.json$/, "");
+    if (!withoutExt.startsWith(`${name}-`)) return false;
+    const rest = withoutExt.slice(name.length + 1);
+    // Slug starts with a letter; subtask number starts with a digit
+    return rest.length > 0 && /^[a-z]/.test(rest);
   }
 
   loadAllTickets(): Ticket[] {
@@ -82,10 +133,31 @@ export class Repository {
   }
 
   deleteTicket(id: string): boolean {
-    const filePath = path.join(this.ticketsDir, `${id}.json`);
-    if (!fs.existsSync(filePath)) return false;
-    fs.unlinkSync(filePath);
-    return true;
+    if (!fs.existsSync(this.ticketsDir)) return false;
+    for (const f of fs.readdirSync(this.ticketsDir)) {
+      if (!f.endsWith(".json")) continue;
+      const content = fs.readFileSync(
+        path.join(this.ticketsDir, f),
+        "utf-8",
+      );
+      const ticket = JSON.parse(content) as Ticket;
+      if (ticket.id === id) {
+        fs.unlinkSync(path.join(this.ticketsDir, f));
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private removeTicketFileByName(name: string): void {
+    if (!fs.existsSync(this.ticketsDir)) return;
+    for (const f of fs.readdirSync(this.ticketsDir)) {
+      if (!f.endsWith(".json")) continue;
+      if (f === `${name}.json` || this.filenameMatchesName(f, name)) {
+        fs.unlinkSync(path.join(this.ticketsDir, f));
+        return;
+      }
+    }
   }
 
   // --- Ticket ID Relationships ---
@@ -168,12 +240,10 @@ export class Repository {
   // --- Next ticket number ---
 
   getNextTicketNumber(type: string): string {
-    const relationships = this.loadRelationships();
-    const names = Object.keys(relationships);
-
-    const topLevelNumbers = names
-      .map((n) => {
-        const match = n.match(/^(?:feat|bugfix|task)-ESE-(\d{4})$/);
+    const tickets = this.loadAllTickets();
+    const topLevelNumbers = tickets
+      .map((t) => {
+        const match = t.name.match(/^(?:feat|bugfix|task)-ESE-(\d{4})$/);
         return match ? parseInt(match[1]!, 10) : 0;
       })
       .filter((n) => n > 0);
@@ -184,12 +254,12 @@ export class Repository {
   }
 
   getNextSubtaskNumber(parentName: string): string {
-    const relationships = this.loadRelationships();
+    const tickets = this.loadAllTickets();
     const prefix = `${parentName}-`;
-    const subtaskNumbers = Object.keys(relationships)
-      .filter((n) => n.startsWith(prefix))
-      .map((n) => {
-        const match = n.match(/-(\d{2})$/);
+    const subtaskNumbers = tickets
+      .filter((t) => t.name.startsWith(prefix))
+      .map((t) => {
+        const match = t.name.match(/-(\d{2})$/);
         return match ? parseInt(match[1]!, 10) : 0;
       });
 

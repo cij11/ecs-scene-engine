@@ -3,7 +3,7 @@
   "name": "task-ESE-0010",
   "type": "task",
   "title": "Simplify status flow, exit criteria, and demo validation",
-  "status": "buildingDemo",
+  "status": "done",
   "description": "Three parts:\n\n### 1. Simplify status flow\n\nCollapse the current 11 statuses to 7. Remove `demoValidated` and `humanDemoValidation` as separate statuses. Reorder so testing comes before review.\n\nNew flow: readyForDev → inDevelopment → inTesting → inReview → buildingDemo → validatingDemo → done\n\nEach status has an **exit criteria** (renamed from 'gate') — what must be true before the ticket can leave that state.\n\n### 2. Rename gates → exit criteria\n\nRename `gates` to `exitCriteria` throughout: statuses.json, types, service, gates.ts (rename file to exit-criteria.ts), CLI output, documentation.\n\n### 3. Context-free demo validation command\n\nAdd `npm run agile -- ticket validate-demo <name>`. This command:\n\n1. Reads demo-expected.json, demo-readme.json, and all artifact files for the ticket's sprint\n2. Generates a self-contained prompt with ONLY the demo file contents inlined (no source code, no implementation context)\n3. Outputs the prompt so the calling agent can spawn a subagent with exactly that text\n4. The subagent writes demo-actual.json based only on the inlined artifacts, including a `validatedBy` field\n\n### 4. Human-only done\n\n`ticket accept` requires interactive stdin confirmation (prompts 'Type YES to confirm'). Agents cannot provide interactive input, so they are explicitly blocked. The `done` exit criteria requires `demoAccepted`, so done is implicitly human-gated through the accept chain.",
   "acceptanceCriteria": "- Status flow simplified to 7 statuses: readyForDev, inDevelopment, inTesting, inReview, buildingDemo, validatingDemo, done\n- inTesting comes before inReview\n- `gates` renamed to `exitCriteria` in statuses.json, types, service, and documentation\n- Exit criteria per status: readyForDev (fields filled), inDevelopment (none), inTesting (CI passes), inReview (no critical/severe, moderate have tickets), buildingDemo (demo artifacts present), validatingDemo (demo-actual.json with interpretations), done (human accept via interactive confirmation)\n- `npm run agile -- ticket validate-demo <name>` generates a self-contained prompt with demo artifacts inlined\n- The prompt contains NO source code or implementation context\n- `ticket accept` requires interactive stdin confirmation — agents cannot complete it\n- CLAUDE.md and agile.md updated",
   "demoDeliverable": "Terminal output showing: (1) simplified status flow in action, (2) exit criteria blocking transitions, (3) validate-demo command generating a prompt, (4) ticket accept requiring interactive confirmation",
@@ -13,13 +13,13 @@
   "sizeLabel": null,
   "subtasks": [],
   "stakeholderUnderstanding": "We are simplifying the status flow from 11 states to 7, reordering so CI runs before review, and renaming gates to exit criteria. We are adding a validate-demo endpoint that generates an isolated subagent prompt containing only demo artifacts — no implementation context — so the subagent independently validates correctness. Ticket accept is explicitly blocked for agents via interactive stdin confirmation, not by inferring caller identity.",
-  "demoAccepted": false,
+  "demoAccepted": true,
   "team": "unknown",
   "started": "2026-03-27T07:39:46.757Z",
-  "completed": null,
+  "completed": "2026-03-27T08:26:59.731Z",
   "blockers": "",
   "knowledgeGaps": "",
   "comments": "",
   "parentName": null,
-  "sprintName": null
+  "sprintName": "sprint_9_2026_03_27"
 }

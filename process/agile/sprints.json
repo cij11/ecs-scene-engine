@@ -27,6 +27,20 @@
       "hours": 0,
       "startedAt": "2026-03-26T15:58:48.673Z",
       "completedAt": null
+    },
+    {
+      "name": "sprint_9_2026_03_27",
+      "status": "active",
+      "ticketNames": [
+        "task-ESE-0010"
+      ],
+      "totalPoints": 8,
+      "completedPoints": 0,
+      "totalTickets": 1,
+      "completedTickets": 0,
+      "hours": 0,
+      "startedAt": "2026-03-27T08:17:53.551Z",
+      "completedAt": null
     }
   ]
 }

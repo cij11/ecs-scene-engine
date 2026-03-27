@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import { execSync } from "node:child_process";
 import type {
   Ticket,
   ExitCriteriaResult,
@@ -11,7 +12,8 @@ import {
   exitInTesting,
   exitInReview,
   exitBuildingDemo,
-  exitValidatingDemo,
+  exitAgentValidatingDemo,
+  exitHumanValidatingDemo,
   exitDone,
 } from "./exit-criteria.js";
 
@@ -67,20 +69,12 @@ export class Service {
 
     this.repo.saveTicket(ticket);
 
-    // Register name → UUID
-    const relationships = this.repo.loadRelationships();
-    relationships[name] = ticket.id;
-    this.repo.saveRelationships(relationships);
-
     // Update parent's subtasks array
     if (parentName) {
-      const parentId = relationships[parentName];
-      if (parentId) {
-        const parent = this.repo.loadTicket(parentId);
-        if (parent && !parent.subtasks.includes(name)) {
-          parent.subtasks.push(name);
-          this.repo.saveTicket(parent);
-        }
+      const parent = this.repo.loadTicketByName(parentName);
+      if (parent && !parent.subtasks.includes(name)) {
+        parent.subtasks.push(name);
+        this.repo.saveTicket(parent);
       }
     }
 
@@ -133,6 +127,7 @@ export class Service {
       if (!exitResult.passed) {
         throw new ExitCriteriaError(ticket.name, newStatus, exitResult.errors);
       }
+
     }
 
     // Apply transition
@@ -166,9 +161,16 @@ export class Service {
 
   acceptDemo(name: string): Ticket {
     const ticket = this.resolveTicket(name);
+    if (ticket.status !== "humanValidatingDemo") {
+      throw new Error(
+        `${ticket.name} is in "${ticket.status}", not "humanValidatingDemo" — demo cannot be accepted yet`,
+      );
+    }
     ticket.demoAccepted = true;
     this.repo.saveTicket(ticket);
-    return ticket;
+    // Accepting the demo transitions to done
+    const { ticket: done } = this.transitionTicket(name, "done");
+    return done;
   }
 
   validateTickets(): { errors: string[]; warnings: string[] } {
@@ -176,32 +178,18 @@ export class Service {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    const relationships = this.repo.loadRelationships();
-
     for (const ticket of tickets) {
       // Check required fields exist
       if (!ticket.id) errors.push(`${ticket.name}: missing id`);
       if (!ticket.name) errors.push(`${ticket.name ?? "unknown"}: missing name`);
       if (!ticket.type) errors.push(`${ticket.name}: missing type`);
 
-      // Check relationship consistency
-      const registeredId = relationships[ticket.name];
-      if (!registeredId) {
-        warnings.push(
-          `${ticket.name}: not found in ticket_id_relationships.json`,
-        );
-      } else if (registeredId !== ticket.id) {
-        errors.push(
-          `${ticket.name}: UUID mismatch — ticket says "${ticket.id}" but relationships says "${registeredId}"`,
-        );
-      }
-
       // Check subtask references
       for (const subName of ticket.subtasks) {
-        const subId = relationships[subName];
-        if (!subId) {
+        const sub = this.repo.loadTicketByName(subName);
+        if (!sub) {
           warnings.push(
-            `${ticket.name}: subtask "${subName}" not found in relationships`,
+            `${ticket.name}: subtask "${subName}" not found`,
           );
         }
       }
@@ -378,16 +366,6 @@ export class Service {
       }
     }
 
-    // Exit criteria: all tickets must have demoAccepted
-    for (const ticketName of sprint.ticketNames) {
-      const ticket = this.resolveTicketSafe(ticketName);
-      if (ticket && !ticket.demoAccepted) {
-        errors.push(
-          `${ticket.name}: demoAccepted is not true — run 'npm run agile -- ticket accept ${ticket.name}'`,
-        );
-      }
-    }
-
     // Exit criteria: must have tickets with points
     if (totalCount === 0) {
       errors.push("No tickets with story points found — velocity cannot be calculated");
@@ -511,6 +489,98 @@ export class Service {
     return total;
   }
 
+  demoInit(
+    name: string,
+    description: string,
+    durationMs: number,
+  ): string {
+    const ticket = this.resolveTicket(name);
+    const sprintDir = this.getSprintDir(ticket);
+    if (!sprintDir) {
+      throw new Error(`Ticket "${name}" is not in a sprint.`);
+    }
+
+    const demoDir = `${sprintDir}/demo`;
+    fs.mkdirSync(demoDir, { recursive: true });
+
+    const expectedPath = `${demoDir}/demo-expected.json`;
+    fs.writeFileSync(
+      expectedPath,
+      JSON.stringify({ description, durationMs }, null, 2) + "\n",
+      "utf-8",
+    );
+
+    return demoDir;
+  }
+
+  demoCapture(
+    name: string,
+    artifactName: string,
+    command: string,
+  ): string {
+    const ticket = this.resolveTicket(name);
+    const sprintDir = this.getSprintDir(ticket);
+    if (!sprintDir) {
+      throw new Error(`Ticket "${name}" is not in a sprint.`);
+    }
+
+    const demoDir = `${sprintDir}/demo`;
+    if (!fs.existsSync(demoDir)) {
+      throw new Error(`Demo directory not found. Run demo-init first.`);
+    }
+
+    let output: string;
+    try {
+      output = execSync(command, {
+        cwd: this.projectRoot,
+        encoding: "utf-8",
+      }) as string;
+    } catch (e: unknown) {
+      const err = e as { stdout?: string; stderr?: string };
+      output = (err.stdout ?? "") + (err.stderr ?? "");
+    }
+
+    const artifactPath = `${demoDir}/${artifactName}`;
+    fs.writeFileSync(artifactPath, output, "utf-8");
+
+    return artifactPath;
+  }
+
+  demoFinish(
+    name: string,
+    artifactType: "video" | "terminal",
+    command: string,
+  ): string {
+    const ticket = this.resolveTicket(name);
+    const sprintDir = this.getSprintDir(ticket);
+    if (!sprintDir) {
+      throw new Error(`Ticket "${name}" is not in a sprint.`);
+    }
+
+    const demoDir = `${sprintDir}/demo`;
+    if (!fs.existsSync(demoDir)) {
+      throw new Error(`Demo directory not found.`);
+    }
+
+    // Scan for artifact files (exclude JSON config files)
+    const artifacts = fs
+      .readdirSync(demoDir)
+      .filter(
+        (f: string) =>
+          !f.startsWith("demo-") && !f.endsWith(".json") || f.startsWith("artifact"),
+      )
+      .filter((f: string) => !f.startsWith("demo-"));
+
+    const readmePath = `${demoDir}/demo-readme.json`;
+    fs.writeFileSync(
+      readmePath,
+      JSON.stringify({ command, artifactType, artifacts }, null, 2) + "\n",
+      "utf-8",
+    );
+
+    return readmePath;
+  }
+
   generateValidateDemoPrompt(name: string): string {
     const ticket = this.resolveTicket(name);
     const sprintDir = this.getSprintDir(ticket);
@@ -586,13 +656,7 @@ export class Service {
     const num = this.repo.getNextTicketNumber(ticket.type);
     const newName = `${ticket.type}-ESE-${num}`;
 
-    // Update relationships
-    const relationships = this.repo.loadRelationships();
-    delete relationships[subtaskName];
-    relationships[newName] = ticket.id;
-    this.repo.saveRelationships(relationships);
-
-    // Update ticket
+    // Update ticket (old file removed by saveTicket)
     const oldName = ticket.name;
     ticket.name = newName;
     ticket.title = ticket.title.replace(subtaskName, newName);
@@ -600,11 +664,9 @@ export class Service {
     this.repo.saveTicket(ticket);
 
     // Update parent's subtask list
-    const parentId = this.repo.resolveTicketName(
-      subtaskName.match(/^((?:feat|bugfix|task)-ESE-\d{4})-\d{2}$/)?.[1] ?? "",
-    );
-    if (parentId) {
-      const parent = this.repo.loadTicket(parentId);
+    const parentMatch = subtaskName.match(/^((?:feat|bugfix|task)-ESE-\d{4})-\d{2}$/);
+    if (parentMatch) {
+      const parent = this.repo.loadTicketByName(parentMatch[1]!);
       if (parent) {
         parent.subtasks = parent.subtasks.filter((s) => s !== subtaskName);
         this.repo.saveTicket(parent);
@@ -615,20 +677,15 @@ export class Service {
     const allTickets = this.repo.loadAllTickets();
     for (const child of allTickets) {
       if (child.parentName === oldName) {
-        const oldChildName = child.name;
-        const subNum = oldChildName.split("-").pop()!;
+        const subNum = child.name.split("-").pop()!;
         const newChildName = `${newName}-${subNum}`;
-
-        delete relationships[oldChildName];
-        relationships[newChildName] = child.id;
 
         child.name = newChildName;
         child.parentName = newName;
-        child.title = child.title.replace(oldChildName, newChildName);
+        child.title = child.title.replace(child.name, newChildName);
         this.repo.saveTicket(child);
       }
     }
-    this.repo.saveRelationships(relationships);
 
     return { oldName, newName };
   }
@@ -636,23 +693,15 @@ export class Service {
   // --- Private helpers ---
 
   private resolveTicket(name: string): Ticket {
-    const id = this.repo.resolveTicketName(name);
-    if (!id) {
-      throw new Error(`Ticket "${name}" not found.`);
-    }
-    const ticket = this.repo.loadTicket(id);
+    const ticket = this.repo.loadTicketByName(name);
     if (!ticket) {
-      throw new Error(
-        `Ticket "${name}" has UUID "${id}" but JSON file is missing.`,
-      );
+      throw new Error(`Ticket "${name}" not found.`);
     }
     return ticket;
   }
 
   private resolveTicketSafe(name: string): Ticket | null {
-    const id = this.repo.resolveTicketName(name);
-    if (!id) return null;
-    return this.repo.loadTicket(id);
+    return this.repo.loadTicketByName(name);
   }
 
   private checkExitCriteria(
@@ -670,8 +719,10 @@ export class Service {
         return exitInReview(sprintDir);
       case "buildingDemo":
         return exitBuildingDemo(ticket, sprintDir);
-      case "validatingDemo":
-        return exitValidatingDemo(ticket, sprintDir);
+      case "agentValidatingDemo":
+        return exitAgentValidatingDemo(ticket, sprintDir);
+      case "humanValidatingDemo":
+        return exitHumanValidatingDemo(ticket);
       case "done":
         return exitDone(
           ticket,

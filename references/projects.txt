@@ -5,3 +5,8 @@ spelunky-classic https://github.com/yancharkin/SpelunkyClassicHD.git
 Beyond-All-Reason https://github.com/beyond-all-reason/Beyond-All-Reason.git
 spring https://github.com/spring/spring.git
 colyseus https://github.com/colyseus/colyseus.git
+typegpu https://github.com/software-mansion/TypeGPU.git
+bevy-gpu-compute https://github.com/Sheldonfrith/bevy_gpu_compute.git
+bevy-hanabi https://github.com/djeedai/bevy_hanabi.git
+gpu-physics-unity https://github.com/jknightdoeswork/gpu-physics-unity.git
+gpu-gems-broadphase https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-32-broad-phase-collision-detection-cuda

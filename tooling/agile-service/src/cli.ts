@@ -31,6 +31,9 @@ function usage(): never {
   console.error("  ticket show <name>");
   console.error("  ticket points <parent>");
   console.error("  ticket promote <subtask>");
+  console.error("  ticket demo-init <name> <description> <durationMs>");
+  console.error("  ticket demo-capture <name> <artifact-name> <command...>");
+  console.error("  ticket demo-finish <name> <video|terminal> [command-description]");
   console.error("  ticket validate-demo <name>");
   console.error("");
   console.error("Sprint commands:");
@@ -205,6 +208,55 @@ function handleTicket(action: string, args: string[]): void {
       console.log(
         `${parentName}: ${total} story points (recursive sum of subtasks)`,
       );
+      break;
+    }
+
+    case "demo-init": {
+      const name = args[0];
+      const description = args[1];
+      const durationMs = args[2] ? parseInt(args[2], 10) : undefined;
+      if (!name || !description || !durationMs) {
+        console.error(
+          "Usage: ticket demo-init <name> <description> <durationMs>",
+        );
+        process.exit(1);
+      }
+      const demoDir = service.demoInit(name, description, durationMs);
+      console.log(`Demo initialized: ${demoDir}`);
+      break;
+    }
+
+    case "demo-capture": {
+      const name = args[0];
+      const artifactName = args[1];
+      const command = args.slice(2).join(" ");
+      if (!name || !artifactName || !command) {
+        console.error(
+          "Usage: ticket demo-capture <name> <artifact-name> <command...>",
+        );
+        process.exit(1);
+      }
+      const artifactPath = service.demoCapture(name, artifactName, command);
+      console.log(`Captured: ${artifactPath}`);
+      break;
+    }
+
+    case "demo-finish": {
+      const name = args[0];
+      const artifactType = args[1] as "video" | "terminal";
+      const command = args.slice(2).join(" ") || "see artifact files";
+      if (!name || !artifactType) {
+        console.error(
+          "Usage: ticket demo-finish <name> <video|terminal> [command-description]",
+        );
+        process.exit(1);
+      }
+      if (!["video", "terminal"].includes(artifactType)) {
+        console.error("artifactType must be 'video' or 'terminal'");
+        process.exit(1);
+      }
+      const readmePath = service.demoFinish(name, artifactType, command);
+      console.log(`Demo readme: ${readmePath}`);
       break;
     }
 

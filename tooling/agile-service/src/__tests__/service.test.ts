@@ -51,7 +51,7 @@ describe("Service — ticket commands", () => {
 
     const loaded = repo.loadTicket(ticket.id);
     expect(loaded).not.toBeNull();
-    expect(repo.resolveTicketName("task-ESE-0001")).toBe(ticket.id);
+    expect(repo.loadTicketByName("task-ESE-0001")?.id).toBe(ticket.id);
   });
 
   it("auto-increments ticket numbers", () => {
@@ -173,13 +173,19 @@ describe("Service — ticket commands", () => {
     ).toThrow("cannot go from");
   });
 
-  it("accepts demo", () => {
+  it("accepts demo and transitions to done", () => {
     const ticket = service.createTicket("feat", "Demo test");
+    // Set up ticket to reach humanValidatingDemo
+    const loaded = repo.loadTicket(ticket.id)!;
+    loaded.status = "humanValidatingDemo";
+    loaded.started = new Date().toISOString();
+    loaded.acceptanceCriteria = "ac";
+    loaded.size = 3;
+    repo.saveTicket(loaded);
+
     const result = service.acceptDemo(ticket.name);
     expect(result.demoAccepted).toBe(true);
-
-    const loaded = repo.loadTicket(ticket.id)!;
-    expect(loaded.demoAccepted).toBe(true);
+    expect(result.status).toBe("done");
   });
 
   it("lists all tickets", () => {

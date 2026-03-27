@@ -189,27 +189,34 @@ describe("Repository", () => {
   });
 
   describe("ticket numbering", () => {
-    it("generates sequential ticket numbers", () => {
-      repo.saveRelationships({
-        "task-ESE-0001": "a",
-        "feat-ESE-0003": "b",
+    function saveStub(name: string, title = "stub") {
+      repo.saveTicket({
+        id: repo.generateId(), name, type: "task", title, status: "inRefinement",
+        description: "", acceptanceCriteria: "", demoDeliverable: "",
+        testingScenarios: "", testingNotes: "", size: null, sizeLabel: null,
+        subtasks: [], stakeholderUnderstanding: "", demoAccepted: false,
+        team: "", started: null, completed: null, blockers: "",
+        knowledgeGaps: "", comments: "", parentName: null, sprintName: null,
       });
+    }
+
+    it("generates sequential ticket numbers", () => {
+      saveStub("task-ESE-0001");
+      saveStub("feat-ESE-0003");
 
       expect(repo.getNextTicketNumber("task")).toBe("0004");
     });
 
     it("generates subtask numbers", () => {
-      repo.saveRelationships({
-        "task-ESE-0001": "a",
-        "task-ESE-0001-01": "b",
-        "task-ESE-0001-02": "c",
-      });
+      saveStub("task-ESE-0001");
+      saveStub("task-ESE-0001-01");
+      saveStub("task-ESE-0001-02");
 
       expect(repo.getNextSubtaskNumber("task-ESE-0001")).toBe("03");
     });
 
     it("starts at 01 for first subtask", () => {
-      repo.saveRelationships({ "task-ESE-0001": "a" });
+      saveStub("task-ESE-0001");
       expect(repo.getNextSubtaskNumber("task-ESE-0001")).toBe("01");
     });
   });

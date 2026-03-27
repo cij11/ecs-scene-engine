@@ -27,13 +27,18 @@
     },
     {
       "name": "buildingDemo",
-      "forwardTransitions": ["validatingDemo"],
+      "forwardTransitions": ["agentValidatingDemo"],
       "exitCriteria": ["buildingDemo"]
     },
     {
-      "name": "validatingDemo",
+      "name": "agentValidatingDemo",
+      "forwardTransitions": ["humanValidatingDemo"],
+      "exitCriteria": ["agentValidatingDemo"]
+    },
+    {
+      "name": "humanValidatingDemo",
       "forwardTransitions": ["done"],
-      "exitCriteria": ["validatingDemo"]
+      "exitCriteria": ["humanValidatingDemo"]
     },
     {
       "name": "done",

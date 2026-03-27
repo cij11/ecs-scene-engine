@@ -153,7 +153,7 @@ export function exitBuildingDemo(
 }
 
 /** Exit criteria for validatingDemo: demo-actual.json must have interpretations and validatedBy. */
-export function exitValidatingDemo(
+export function exitAgentValidatingDemo(
   _ticket: Ticket,
   sprintDir: string | null,
 ): ExitCriteriaResult {
@@ -208,7 +208,20 @@ export function exitValidatingDemo(
   return errors.length > 0 ? fail(errors) : pass();
 }
 
-/** Exit criteria for done: CI, timestamps, demoAccepted (human interactive), subtasks done. */
+/** Exit criteria for humanValidatingDemo: human must accept via interactive terminal. */
+export function exitHumanValidatingDemo(ticket: Ticket): ExitCriteriaResult {
+  const errors: string[] = [];
+
+  if (!ticket.demoAccepted) {
+    errors.push(
+      `demoAccepted is not true — run 'npm run agile -- ticket accept ${ticket.name}'`,
+    );
+  }
+
+  return errors.length > 0 ? fail(errors) : pass();
+}
+
+/** Exit criteria for done: CI, timestamps, subtasks done. */
 export function exitDone(
   ticket: Ticket,
   allTickets: Ticket[],
@@ -243,13 +256,6 @@ export function exitDone(
             l.includes("FAIL") || l.includes("error") || l.includes("Error"),
         ) ?? "unknown error";
     errors.push(`CI pipeline failed: ${firstError.trim()}`);
-  }
-
-  // All tickets must have accepted demo (human-only interactive confirmation)
-  if (!ticket.demoAccepted) {
-    errors.push(
-      `demoAccepted is not true — run 'npm run agile -- ticket accept ${ticket.name}'`,
-    );
   }
 
   // Subtasks must be done
