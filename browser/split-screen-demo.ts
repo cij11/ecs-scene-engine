@@ -100,6 +100,8 @@ async function main() {
     renderer.resize(container.clientWidth, container.clientHeight);
   });
 
+  console.log("Setup complete, starting loop");
+
   // --- Game loop with split screen ---
   let lastTime = performance.now();
 
@@ -119,6 +121,8 @@ async function main() {
         cameraHandles.push(camHandle);
       }
     }
+
+    console.log("Frame: cameras=" + cameraHandles.length);
 
     if (cameraHandles.length >= 2) {
       // Split screen: left half = camera 1, right half = camera 2
@@ -149,4 +153,4 @@ async function main() {
   requestAnimationFrame(loop);
 }
 
-main();
+main().catch((e) => console.error("MAIN ERROR:", e));

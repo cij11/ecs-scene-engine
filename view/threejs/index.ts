@@ -24,6 +24,7 @@ export class ThreeJSRenderer implements Renderer {
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(target.clientWidth, target.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.autoClear = false;
     target.appendChild(renderer.domElement);
     this.threeRenderer = renderer;
 
@@ -203,7 +204,8 @@ export class ThreeJSRenderer implements Renderer {
   }
 
   beginFrame(): void {
-    // No-op — Three.js doesn't need explicit frame begin
+    if (!this.threeRenderer) return;
+    this.threeRenderer.clear();
   }
 
   endFrame(): void {
@@ -276,6 +278,7 @@ export class ThreeJSRenderer implements Renderer {
 
   render(): void {
     if (!this.threeRenderer) return;
+    this.threeRenderer.clear();
     this.threeRenderer.render(this.scene, this.activeCamera);
   }
 

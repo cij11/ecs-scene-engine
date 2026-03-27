@@ -138,3 +138,16 @@
 {"timestamp":"2026-03-27T11:36:27.192Z","ticket":"feat-ESE-0015-06","from":"readyForDev","to":"inDevelopment","team":"unknown"}
 {"timestamp":"2026-03-27T11:36:52.020Z","ticket":"feat-ESE-0012-05","from":"inDevelopment","to":"inTesting","team":"unknown"}
 {"timestamp":"2026-03-27T11:37:06.427Z","ticket":"feat-ESE-0012-05","from":"inTesting","to":"inReview","team":"unknown"}
+{"timestamp":"2026-03-27T11:39:08.662Z","ticket":"feat-ESE-0012-04","from":"agentValidatingDemo","to":"buildingDemo","team":"unknown"}
+{"timestamp":"2026-03-27T11:39:09.619Z","ticket":"feat-ESE-0012-04","from":"buildingDemo","to":"agentValidatingDemo","team":"unknown"}
+{"timestamp":"2026-03-27T11:39:11.149Z","ticket":"feat-ESE-0012-05","from":"inReview","to":"buildingDemo","team":"unknown"}
+{"timestamp":"2026-03-27T11:39:12.660Z","ticket":"feat-ESE-0012-05","from":"buildingDemo","to":"agentValidatingDemo","team":"unknown"}
+{"timestamp":"2026-03-27T11:40:44.775Z","ticket":"feat-ESE-0012-04","from":"agentValidatingDemo","to":"humanValidatingDemo","team":"unknown"}
+{"timestamp":"2026-03-27T11:40:45.849Z","ticket":"feat-ESE-0012-05","from":"agentValidatingDemo","to":"humanValidatingDemo","team":"unknown"}
+{"timestamp":"2026-03-27T11:41:17.164Z","ticket":"feat-ESE-0012-04","from":"humanValidatingDemo","to":"done","team":"unknown"}
+{"timestamp":"2026-03-27T11:41:19.907Z","ticket":"feat-ESE-0012-05","from":"humanValidatingDemo","to":"done","team":"unknown"}
+{"timestamp":"2026-03-27T11:41:47.593Z","ticket":"feat-ESE-0012-06","from":"readyForDev","to":"inDevelopment","team":"unknown"}
+{"timestamp":"2026-03-27T11:48:58.215Z","ticket":"feat-ESE-0012-06","from":"inDevelopment","to":"inTesting","team":"unknown"}
+{"timestamp":"2026-03-27T11:49:16.990Z","ticket":"feat-ESE-0012-06","from":"inTesting","to":"inReview","team":"unknown"}
+{"timestamp":"2026-03-27T11:49:58.423Z","ticket":"feat-ESE-0012-06","from":"inReview","to":"buildingDemo","team":"unknown"}
+{"timestamp":"2026-03-27T11:49:59.456Z","ticket":"feat-ESE-0012-06","from":"buildingDemo","to":"agentValidatingDemo","team":"unknown"}
