@@ -47,6 +47,7 @@ function createMockRenderer() {
     setViewport() {},
     resetViewport() {},
     setMaterialTexture() {},
+    clearMaterialTexture() {},
     render() {},
     destroy() {},
   };

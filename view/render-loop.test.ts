@@ -31,6 +31,7 @@ function createTrackingRenderer() {
     resetViewport() {
       calls.push({ method: "resetViewport", args: [] });
     },
+    clearMaterialTexture() {},
     setMaterialTexture(handle: RenderHandle, targetId: string) {
       calls.push({ method: "setMaterialTexture", args: [handle, targetId] });
     },

@@ -118,8 +118,8 @@ async function main() {
 
     // Point camera down at origin (after sync so camera handle exists)
     for (const [, worldState] of viewSync.state.worlds) {
-      for (const [, camHandle] of worldState.entityCamera) {
-        renderer.lookAt(camHandle, 0, 0, 0);
+      for (const [, cam] of worldState.entityCamera) {
+        renderer.lookAt(cam.handle, 0, 0, 0);
       }
     }
 

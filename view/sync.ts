@@ -23,7 +23,8 @@ export { Transform };
 /** Tracks which entities have been synced to the renderer, per world */
 interface WorldSyncState {
   entityHandles: Map<number, RenderHandle[]>;
-  entityCamera: Map<number, RenderHandle>;
+  entityCamera: Map<number, { handle: RenderHandle; renderTarget: string }>;
+  entityRenderQuad: Map<number, { handle: RenderHandle; renderTarget: string }>;
 }
 
 interface SyncState {
@@ -34,7 +35,7 @@ interface SyncState {
 function getWorldState(state: SyncState, world: World): WorldSyncState {
   let worldState = state.worlds.get(world);
   if (!worldState) {
-    worldState = { entityHandles: new Map(), entityCamera: new Map() };
+    worldState = { entityHandles: new Map(), entityCamera: new Map(), entityRenderQuad: new Map() };
     state.worlds.set(world, worldState);
   }
   return worldState;
@@ -136,8 +137,15 @@ export function syncWorld(sync: ViewSync, world: World, parentTransform?: Transf
           handles.push(handle);
 
           if (params.type === "camera") {
-            worldState.entityCamera.set(entityIdx, handle);
+            const rt = params.renderTarget ?? "browser";
+            worldState.entityCamera.set(entityIdx, { handle, renderTarget: rt });
             renderer.setActiveCamera(handle);
+          }
+          if (params.type === "renderQuad") {
+            worldState.entityRenderQuad.set(entityIdx, {
+              handle,
+              renderTarget: params.renderTarget,
+            });
           }
         }
       }
@@ -175,6 +183,7 @@ export function syncWorld(sync: ViewSync, world: World, parentTransform?: Transf
       }
       worldState.entityHandles.delete(entityIdx);
       worldState.entityCamera.delete(entityIdx);
+      worldState.entityRenderQuad.delete(entityIdx);
     }
   }
 }

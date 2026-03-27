@@ -1,44 +1,19 @@
 {
   "statuses": [
     {
-      "name": "inRefinement",
-      "forwardTransitions": ["readyForDev"],
-      "exitCriteria": ["inRefinement"]
+      "name": "refinement",
+      "forwardTransitions": ["dev"],
+      "exitCriteria": ["refinement"]
     },
     {
-      "name": "readyForDev",
-      "forwardTransitions": ["inDevelopment"],
+      "name": "dev",
+      "forwardTransitions": ["review"],
       "exitCriteria": []
     },
     {
-      "name": "inDevelopment",
-      "forwardTransitions": ["inTesting"],
-      "exitCriteria": []
-    },
-    {
-      "name": "inTesting",
-      "forwardTransitions": ["inReview"],
-      "exitCriteria": ["inTesting"]
-    },
-    {
-      "name": "inReview",
-      "forwardTransitions": ["buildingDemo"],
-      "exitCriteria": ["inReview"]
-    },
-    {
-      "name": "buildingDemo",
-      "forwardTransitions": ["agentValidatingDemo"],
-      "exitCriteria": ["buildingDemo"]
-    },
-    {
-      "name": "agentValidatingDemo",
-      "forwardTransitions": ["humanValidatingDemo"],
-      "exitCriteria": ["agentValidatingDemo"]
-    },
-    {
-      "name": "humanValidatingDemo",
+      "name": "review",
       "forwardTransitions": ["done"],
-      "exitCriteria": ["humanValidatingDemo"]
+      "exitCriteria": ["review"]
     },
     {
       "name": "done",

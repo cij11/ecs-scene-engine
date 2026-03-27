@@ -1,36 +1,212 @@
-[01:08:32.109] [INFO] Running addon-a11y-addon-test automigration
-[01:08:32.109] [DEBUG] Extracting storybook data...
-[01:08:32.109] [DEBUG] Getting Storybook info...
-[01:08:32.287] [ERROR] [38;2;241;97;97mSB_CORE-SERVER_0007 (MainFileEvaluationError): Storybook couldn't evaluate your .storybook/main.ts file.
+[01:18:52.191] [INFO] storybook v10.3.3
+[01:18:52.773] [DEBUG] Getting package.json info for /Users/chrisjolly/Projects/ecs-scene-engine/package.json...
+[01:18:53.125] [INFO] Starting...
+[01:18:53.163] [WARN] No story files found for the specified pattern: stories/**/*.mdx
+[01:18:53.384] [DEBUG] Starting preview..
+[01:18:53.482] [WARN] 🚨 Unable to index files:
+- ./stories/feat-ese-0012/feat-ese-0012-01/feat-ese-0012-01.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0012/feat-ese-0012-01/feat-ese-0012-01.stories.ts (line 4, col 0)
 
-Original error:
-Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@chromatic-com/storybook' imported from /.storybook/main.ts
-    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
-    at packageResolve (node:internal/modules/esm/resolve:768:81)
-    at moduleResolve (node:internal/modules/esm/resolve:859:18)
-    at defaultResolve (node:internal/modules/esm/resolve:991:11)
-    at nextResolve (node:internal/modules/esm/hooks:785:28)
-    at AsyncLoaderHooksOnLoaderHookWorker.resolve (node:internal/modules/esm/hooks:269:30)
-    at MessagePort.handleMessage (node:internal/modules/esm/worker:251:24)
-    at [nodejs.internal.kHybridDispatch] (node:internal/event_target:843:20)
-    at MessagePort.<anonymous> (node:internal/per_context/messageport:23:28)[39m
-    at loadMainConfig (file:///Users/chrisjolly/.npm/_npx/7f0b12aa0cbfbce2/node_modules/storybook/dist/_node-chunks/chunk-NQBOIYE4.js:11709:11)
-    at async getStorybookInfo (file:///Users/chrisjolly/.npm/_npx/7f0b12aa0cbfbce2/node_modules/storybook/dist/_node-chunks/chunk-NQBOIYE4.js:11798:59)
-    at async getStorybookData (file:///Users/chrisjolly/.npm/_npx/7f0b12aa0cbfbce2/node_modules/@storybook/cli/dist/_node-chunks/chunk-BH3XEHG4.js:169:7)
-    at async doAutomigrate (file:///Users/chrisjolly/.npm/_npx/7f0b12aa0cbfbce2/node_modules/@storybook/cli/dist/_node-chunks/run-NTMEAVO5.js:7751:7)
-    at async file:///Users/chrisjolly/.npm/_npx/7f0b12aa0cbfbce2/node_modules/@storybook/cli/dist/_node-chunks/run-NTMEAVO5.js:9715:90
-    at async withTelemetry (file:///Users/chrisjolly/.npm/_npx/7f0b12aa0cbfbce2/node_modules/storybook/dist/_node-chunks/chunk-6PADJQ3N.js:218:12)
-[01:08:32.310] [INFO] Storybook collects completely anonymous usage telemetry. We use it to shape Storybook's roadmap and prioritize features. You can learn more, including how to opt out, at https://storybook.js.org/telemetry
-[01:08:33.329] [ERROR] SB_CORE-SERVER_0007 (MainFileEvaluationError): Storybook couldn't evaluate your .storybook/main.ts file.
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0012/feat-ese-0012-02/feat-ese-0012-02.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0012/feat-ese-0012-02/feat-ese-0012-02.stories.ts (line 4, col 0)
 
-Original error:
-Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@chromatic-com/storybook' imported from /.storybook/main.ts
-    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
-    at packageResolve (node:internal/modules/esm/resolve:768:81)
-    at moduleResolve (node:internal/modules/esm/resolve:859:18)
-    at defaultResolve (node:internal/modules/esm/resolve:991:11)
-    at nextResolve (node:internal/modules/esm/hooks:785:28)
-    at AsyncLoaderHooksOnLoaderHookWorker.resolve (node:internal/modules/esm/hooks:269:30)
-    at MessagePort.handleMessage (node:internal/modules/esm/worker:251:24)
-    at [nodejs.internal.kHybridDispatch] (node:internal/event_target:843:20)
-    at MessagePort.<anonymous> (node:internal/per_context/messageport:23:28)
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0012/feat-ese-0012-03/feat-ese-0012-03.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0012/feat-ese-0012-03/feat-ese-0012-03.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0012/feat-ese-0012-04/feat-ese-0012-04.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0012/feat-ese-0012-04/feat-ese-0012-04.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0012/feat-ese-0012-05/feat-ese-0012-05.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0012/feat-ese-0012-05/feat-ese-0012-05.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0012/feat-ese-0012-06/feat-ese-0012-06.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0012/feat-ese-0012-06/feat-ese-0012-06.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0012/feat-ese-0012.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0012/feat-ese-0012.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-01/feat-ese-0015-01.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0015/feat-ese-0015-01/feat-ese-0015-01.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-02/feat-ese-0015-02.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0015/feat-ese-0015-02/feat-ese-0015-02.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-03/feat-ese-0015-03.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0015/feat-ese-0015-03/feat-ese-0015-03.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-04/feat-ese-0015-04.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0015/feat-ese-0015-04/feat-ese-0015-04.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-05/feat-ese-0015-05.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0015/feat-ese-0015-05/feat-ese-0015-05.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-06/feat-ese-0015-06.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0015/feat-ese-0015-06/feat-ese-0015-06.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-07/feat-ese-0015-07.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0015/feat-ese-0015-07/feat-ese-0015-07.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-08/feat-ese-0015-08.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0015/feat-ese-0015-08/feat-ese-0015-08.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/feat-ese-0015/feat-ese-0015.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0006/task-ese-0006.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0006/task-ese-0006.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0007/task-ese-0007.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0007/task-ese-0007.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0008/task-ese-0008.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0008/task-ese-0008.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0009/task-ese-0009.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0009/task-ese-0009.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0010/task-ese-0010.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0010/task-ese-0010.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0011/task-ese-0011.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0011/task-ese-0011.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0013/task-ese-0013.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0013/task-ese-0013.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0014/task-ese-0014.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0014/task-ese-0014.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016-01/task-ese-0016-01.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0016/task-ese-0016-01/task-ese-0016-01.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016-02/task-ese-0016-02.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0016/task-ese-0016-02/task-ese-0016-02.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016-03/task-ese-0016-03.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0016/task-ese-0016-03/task-ese-0016-03.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016-04/task-ese-0016-04.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0016/task-ese-0016-04/task-ese-0016-04.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016-05/task-ese-0016-05.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0016/task-ese-0016-05/task-ese-0016-05.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016-06/task-ese-0016-06.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0016/task-ese-0016-06/task-ese-0016-06.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0016/task-ese-0016.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0017/task-ese-0017.stories.ts: CSF: default export must be an object /Users/chrisjolly/Projects/ecs-scene-engine/stories/task-ese-0017/task-ese-0017.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+[01:18:53.511] [ERROR] Failed to build the preview
+[01:18:53.514] [ERROR] Error: [38;2;241;97;97mUnable to index files:
+- ./stories/feat-ese-0012/feat-ese-0012-01/feat-ese-0012-01.stories.ts: CSF: default export must be an object ./stories/feat-ese-0012/feat-ese-0012-01/feat-ese-0012-01.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0012/feat-ese-0012-02/feat-ese-0012-02.stories.ts: CSF: default export must be an object ./stories/feat-ese-0012/feat-ese-0012-02/feat-ese-0012-02.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0012/feat-ese-0012-03/feat-ese-0012-03.stories.ts: CSF: default export must be an object ./stories/feat-ese-0012/feat-ese-0012-03/feat-ese-0012-03.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0012/feat-ese-0012-04/feat-ese-0012-04.stories.ts: CSF: default export must be an object ./stories/feat-ese-0012/feat-ese-0012-04/feat-ese-0012-04.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0012/feat-ese-0012-05/feat-ese-0012-05.stories.ts: CSF: default export must be an object ./stories/feat-ese-0012/feat-ese-0012-05/feat-ese-0012-05.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0012/feat-ese-0012-06/feat-ese-0012-06.stories.ts: CSF: default export must be an object ./stories/feat-ese-0012/feat-ese-0012-06/feat-ese-0012-06.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0012/feat-ese-0012.stories.ts: CSF: default export must be an object ./stories/feat-ese-0012/feat-ese-0012.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-01/feat-ese-0015-01.stories.ts: CSF: default export must be an object ./stories/feat-ese-0015/feat-ese-0015-01/feat-ese-0015-01.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-02/feat-ese-0015-02.stories.ts: CSF: default export must be an object ./stories/feat-ese-0015/feat-ese-0015-02/feat-ese-0015-02.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-03/feat-ese-0015-03.stories.ts: CSF: default export must be an object ./stories/feat-ese-0015/feat-ese-0015-03/feat-ese-0015-03.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-04/feat-ese-0015-04.stories.ts: CSF: default export must be an object ./stories/feat-ese-0015/feat-ese-0015-04/feat-ese-0015-04.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-05/feat-ese-0015-05.stories.ts: CSF: default export must be an object ./stories/feat-ese-0015/feat-ese-0015-05/feat-ese-0015-05.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-06/feat-ese-0015-06.stories.ts: CSF: default export must be an object ./stories/feat-ese-0015/feat-ese-0015-06/feat-ese-0015-06.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-07/feat-ese-0015-07.stories.ts: CSF: default export must be an object ./stories/feat-ese-0015/feat-ese-0015-07/feat-ese-0015-07.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015-08/feat-ese-0015-08.stories.ts: CSF: default export must be an object ./stories/feat-ese-0015/feat-ese-0015-08/feat-ese-0015-08.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/feat-ese-0015/feat-ese-0015.stories.ts: CSF: default export must be an object ./stories/feat-ese-0015/feat-ese-0015.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0006/task-ese-0006.stories.ts: CSF: default export must be an object ./stories/task-ese-0006/task-ese-0006.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0007/task-ese-0007.stories.ts: CSF: default export must be an object ./stories/task-ese-0007/task-ese-0007.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0008/task-ese-0008.stories.ts: CSF: default export must be an object ./stories/task-ese-0008/task-ese-0008.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0009/task-ese-0009.stories.ts: CSF: default export must be an object ./stories/task-ese-0009/task-ese-0009.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0010/task-ese-0010.stories.ts: CSF: default export must be an object ./stories/task-ese-0010/task-ese-0010.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0011/task-ese-0011.stories.ts: CSF: default export must be an object ./stories/task-ese-0011/task-ese-0011.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0013/task-ese-0013.stories.ts: CSF: default export must be an object ./stories/task-ese-0013/task-ese-0013.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0014/task-ese-0014.stories.ts: CSF: default export must be an object ./stories/task-ese-0014/task-ese-0014.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016-01/task-ese-0016-01.stories.ts: CSF: default export must be an object ./stories/task-ese-0016/task-ese-0016-01/task-ese-0016-01.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016-02/task-ese-0016-02.stories.ts: CSF: default export must be an object ./stories/task-ese-0016/task-ese-0016-02/task-ese-0016-02.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016-03/task-ese-0016-03.stories.ts: CSF: default export must be an object ./stories/task-ese-0016/task-ese-0016-03/task-ese-0016-03.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016-04/task-ese-0016-04.stories.ts: CSF: default export must be an object ./stories/task-ese-0016/task-ese-0016-04/task-ese-0016-04.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016-05/task-ese-0016-05.stories.ts: CSF: default export must be an object ./stories/task-ese-0016/task-ese-0016-05/task-ese-0016-05.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016-06/task-ese-0016-06.stories.ts: CSF: default export must be an object ./stories/task-ese-0016/task-ese-0016-06/task-ese-0016-06.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0016/task-ese-0016.stories.ts: CSF: default export must be an object ./stories/task-ese-0016/task-ese-0016.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export
+- ./stories/task-ese-0017/task-ese-0017.stories.ts: CSF: default export must be an object ./stories/task-ese-0017/task-ese-0017.stories.ts (line 4, col 0)
+
+More info: https://storybook.js.org/docs/writing-stories?ref=error#default-export[39m
+    at _StoryIndexGenerator.getIndexAndStats (file://./node_modules/storybook/dist/core-server/index.js:6282:15)
+    at async _StoryIndexGenerator.getIndex (file://./node_modules/storybook/dist/core-server/index.js:6271:13)
+    at async BasicMinimalPluginContext.config (file://./node_modules/@storybook/builder-vite/dist/_node-chunks/chunk-YEI2VLDL.js:184:19)
+    at async runConfigHook (file://./node_modules/vite/dist/node/chunks/node.js:34583:15)
+    at async resolveConfig (file://./node_modules/vite/dist/node/chunks/node.js:34033:11)
+    at async _createServer (file://./node_modules/vite/dist/node/chunks/node.js:25904:65)
+    at async Module.start (file://./node_modules/@storybook/builder-vite/dist/index.js:1557:17)
+    at async storybookDevServer (file://./node_modules/storybook/dist/core-server/index.js:7502:83)
+    at async buildOrThrow (file://./node_modules/storybook/dist/core-server/index.js:4508:12)
+    at async buildDevStandalone (file://./node_modules/storybook/dist/core-server/index.js:8029:41)
+[01:18:53.542] [WARN] Broken build, fix the error above.
+You may need to refresh the browser.

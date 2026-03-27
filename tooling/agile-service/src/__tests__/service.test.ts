@@ -24,8 +24,8 @@ function makeReadyTicket(
   loaded.stakeholderUnderstanding = "su";
   loaded.demoDeliverable = "demo";
   repo.saveTicket(loaded);
-  // Transition through inRefinement exit criteria to readyForDev
-  service.transitionTicket(ticket.name, "readyForDev", "test");
+  // Transition through refinement exit criteria to dev
+  service.transitionTicket(ticket.name, "dev", "test");
   return ticket;
 }
 
@@ -47,7 +47,7 @@ describe("Service — ticket commands", () => {
     expect(ticket.name).toBe("task-ESE-0001");
     expect(ticket.type).toBe("task");
     expect(ticket.title).toBe("Test ticket");
-    expect(ticket.status).toBe("inRefinement");
+    expect(ticket.status).toBe("refinement");
 
     const loaded = repo.loadTicket(ticket.id);
     expect(loaded).not.toBeNull();
@@ -80,33 +80,28 @@ describe("Service — ticket commands", () => {
 
   it("transitions ticket status", () => {
     const ticket = makeReadyTicket(service, repo);
-    const { oldStatus } = service.transitionTicket(
-      ticket.name,
-      "inDevelopment",
-      "test",
-    );
+    // ticket is now in "dev" — transition to "review"
+    const { oldStatus } = service.transitionTicket(ticket.name, "review", "test");
 
-    expect(oldStatus).toBe("readyForDev");
+    expect(oldStatus).toBe("dev");
     const updated = repo.loadTicket(ticket.id)!;
-    expect(updated.status).toBe("inDevelopment");
+    expect(updated.status).toBe("review");
   });
 
   it("rejects invalid status", () => {
     service.createTicket("task", "Bad status");
-    expect(() =>
-      service.transitionTicket("task-ESE-0001", "invalid", "test"),
-    ).toThrow("Invalid status");
+    expect(() => service.transitionTicket("task-ESE-0001", "invalid", "test")).toThrow(
+      "Invalid status",
+    );
   });
 
-  it("blocks inRefinement exit without required fields", () => {
+  it("blocks refinement exit without required fields", () => {
     const ticket = service.createTicket("task", "Exit criteria test");
 
-    expect(() =>
-      service.transitionTicket(ticket.name, "readyForDev", "test"),
-    ).toThrow(ExitCriteriaError);
+    expect(() => service.transitionTicket(ticket.name, "dev", "test")).toThrow(ExitCriteriaError);
 
     try {
-      service.transitionTicket(ticket.name, "readyForDev", "test");
+      service.transitionTicket(ticket.name, "dev", "test");
     } catch (e) {
       const ge = e as ExitCriteriaError;
       expect(ge.criteriaErrors).toContain("Description is empty");
@@ -115,19 +110,28 @@ describe("Service — ticket commands", () => {
     }
   });
 
-  it("passes inRefinement exit with required fields", () => {
+  it("passes refinement exit with required fields", () => {
     const ticket = makeReadyTicket(service, repo);
-    // makeReadyTicket already transitions to readyForDev
+    // makeReadyTicket already transitions to dev
     const loaded = repo.loadTicket(ticket.id)!;
-    expect(loaded.status).toBe("readyForDev");
+    expect(loaded.status).toBe("dev");
   });
 
   it("blocks skipping statuses (must follow forward transitions)", () => {
-    const ticket = makeReadyTicket(service, repo);
-    // readyForDev → inTesting should fail (must go through inDevelopment)
-    expect(() =>
-      service.transitionTicket(ticket.name, "inTesting", "test"),
-    ).toThrow('cannot go from "readyForDev" to "inTesting"');
+    const ticket = service.createTicket("task", "Skip test");
+    // refinement → review should fail (must go through dev)
+    const loaded = repo.loadTicket(ticket.id)!;
+    loaded.description = "desc";
+    loaded.acceptanceCriteria = "ac";
+    loaded.testingScenarios = "ts";
+    loaded.size = 3;
+    loaded.stakeholderUnderstanding = "su";
+    loaded.demoDeliverable = "demo";
+    repo.saveTicket(loaded);
+
+    expect(() => service.transitionTicket(ticket.name, "review", "test")).toThrow(
+      'cannot go from "refinement" to "review"',
+    );
   });
 
   it("blocks transitions out of done", () => {
@@ -138,54 +142,24 @@ describe("Service — ticket commands", () => {
     loaded.completed = new Date().toISOString();
     repo.saveTicket(loaded);
 
-    expect(() =>
-      service.transitionTicket(ticket.name, "inDevelopment", "test"),
-    ).toThrow("done tickets cannot be transitioned");
+    expect(() => service.transitionTicket(ticket.name, "dev", "test")).toThrow(
+      "done tickets cannot be transitioned",
+    );
   });
 
   it("allows backward transitions without exit criteria", () => {
     const ticket = makeReadyTicket(service, repo);
-    service.transitionTicket(ticket.name, "inDevelopment", "test");
-
-    // Go backward — should skip exit criteria
-    const { ticket: result } = service.transitionTicket(
-      ticket.name,
-      "readyForDev",
-      "test",
-    );
-    expect(result.status).toBe("readyForDev");
+    // dev → refinement (backward) should work without exit criteria
+    const { ticket: result } = service.transitionTicket(ticket.name, "refinement", "test");
+    expect(result.status).toBe("refinement");
   });
 
-  it("sets started timestamp on inDevelopment", () => {
+  it("sets started timestamp on dev", () => {
     const ticket = makeReadyTicket(service, repo);
-    service.transitionTicket(ticket.name, "inDevelopment", "test");
 
     const result = repo.loadTicket(ticket.id)!;
     expect(result.started).not.toBeNull();
     expect(result.team).toBe("test");
-  });
-
-  it("allows all ticket types through demo statuses", () => {
-    const ticket = makeReadyTicket(service, repo);
-    // Can't skip to buildingDemo — must follow the path
-    expect(() =>
-      service.transitionTicket(ticket.name, "buildingDemo", "test"),
-    ).toThrow("cannot go from");
-  });
-
-  it("accepts demo and transitions to done", () => {
-    const ticket = service.createTicket("feat", "Demo test");
-    // Set up ticket to reach humanValidatingDemo
-    const loaded = repo.loadTicket(ticket.id)!;
-    loaded.status = "humanValidatingDemo";
-    loaded.started = new Date().toISOString();
-    loaded.acceptanceCriteria = "ac";
-    loaded.size = 3;
-    repo.saveTicket(loaded);
-
-    const result = service.acceptDemo(ticket.name);
-    expect(result.demoAccepted).toBe(true);
-    expect(result.status).toBe("done");
   });
 
   it("lists all tickets", () => {
@@ -332,20 +306,11 @@ describe("Service — sprint commands", () => {
 describe("Service — validate-demo prompt", () => {
   it("generates a self-contained prompt from demo artifacts", () => {
     const ticket = service.createTicket("task", "Demo prompt test");
-    service.createSprint("sprint_test");
-    service.addToSprint(ticket.name, "sprint_test");
 
-    // Create demo directory at the path the service expects
-    // getSprintDir returns: projectRoot/process/agile/sprints/<name>
-    // projectRoot is tmpDir, so:
-    const demoDir = path.join(
-      tmpDir,
-      "process",
-      "agile",
-      "sprints",
-      "sprint_test",
-      "demo",
-    );
+    // Create demo directory at the story path
+    const slug = ticket.name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    const storyDir = path.join(tmpDir, "stories", slug);
+    const demoDir = path.join(storyDir, "demo");
     fs.mkdirSync(demoDir, { recursive: true });
 
     fs.writeFileSync(

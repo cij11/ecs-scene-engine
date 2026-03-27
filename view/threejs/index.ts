@@ -282,6 +282,16 @@ export class ThreeJSRenderer implements Renderer {
 
     if (obj instanceof THREE.Mesh && obj.material instanceof THREE.MeshStandardMaterial) {
       obj.material.map = target.texture;
+      obj.material.color.set(0xffffff); // white base so texture shows through
+      obj.material.needsUpdate = true;
+    }
+  }
+
+  clearMaterialTexture(handle: RenderHandle): void {
+    const obj = this.objects.get(handle);
+    if (!obj) return;
+    if (obj instanceof THREE.Mesh && obj.material instanceof THREE.MeshStandardMaterial) {
+      obj.material.map = null;
       obj.material.needsUpdate = true;
     }
   }

@@ -92,6 +92,12 @@ export function renderFrame(renderer: Renderer, cameras: CameraInfo[], quads: Qu
       }
     }
 
+    // Unbind textures from quads that display this camera's target
+    // to prevent feedback loop (reading and writing same texture)
+    if (!isBrowser) {
+      unbindQuadTextures(renderer, cam.renderTarget, quadsByTarget);
+    }
+
     // Final pass (or only pass for non-cyclic cameras)
     if (!isBrowser) {
       renderer.setRenderTarget(cam.renderTarget);
@@ -102,14 +108,26 @@ export function renderFrame(renderer: Renderer, cameras: CameraInfo[], quads: Qu
     renderer.setActiveCamera(cam.handle);
     renderer.render();
 
-    // Bind textures after rendering
+    // Rebind textures after rendering
     if (!isBrowser) {
-      bindQuadTextures(renderer, cam.renderTarget, quadsByTarget);
       renderer.setRenderTarget(null);
+      bindQuadTextures(renderer, cam.renderTarget, quadsByTarget);
     }
   }
 
   renderer.resetViewport();
+}
+
+function unbindQuadTextures(
+  renderer: Renderer,
+  renderTarget: string,
+  quadsByTarget: Map<string, QuadInfo[]>,
+): void {
+  const targetQuads = quadsByTarget.get(renderTarget);
+  if (!targetQuads) return;
+  for (const quad of targetQuads) {
+    renderer.clearMaterialTexture(quad.handle);
+  }
 }
 
 function bindQuadTextures(

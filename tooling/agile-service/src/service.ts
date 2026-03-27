@@ -1,21 +1,8 @@
 import * as fs from "node:fs";
 import { execSync } from "node:child_process";
-import type {
-  Ticket,
-  ExitCriteriaResult,
-  Sprint,
-  VelocityEntry,
-} from "./types.js";
+import type { Ticket, ExitCriteriaResult, Sprint, VelocityEntry } from "./types.js";
 import type { Repository } from "./repository.js";
-import {
-  exitInRefinement,
-  exitInTesting,
-  exitInReview,
-  exitBuildingDemo,
-  exitAgentValidatingDemo,
-  exitHumanValidatingDemo,
-  exitDone,
-} from "./exit-criteria.js";
+import { exitRefinement, exitReview, exitDone } from "./exit-criteria.js";
 
 export class Service {
   constructor(
@@ -25,11 +12,7 @@ export class Service {
 
   // --- Ticket commands ---
 
-  createTicket(
-    type: "feat" | "bugfix" | "task",
-    title: string,
-    parentName?: string,
-  ): Ticket {
+  createTicket(type: "feat" | "bugfix" | "task", title: string, parentName?: string): Ticket {
     this.repo.ensureDirectories();
 
     let name: string;
@@ -46,7 +29,7 @@ export class Service {
       name,
       type,
       title,
-      status: "inRefinement",
+      status: "refinement",
       description: "",
       acceptanceCriteria: "",
       demoDeliverable: "",
@@ -78,6 +61,9 @@ export class Service {
       }
     }
 
+    // Auto-create story directory and story file
+    this.ensureStoryDir(ticket);
+
     return ticket;
   }
 
@@ -93,17 +79,13 @@ export class Service {
     // Validate status exists
     const statusNames = config.statuses.map((s) => s.name);
     if (!statusNames.includes(newStatus)) {
-      throw new Error(
-        `Invalid status "${newStatus}". Must be one of: ${statusNames.join(", ")}`,
-      );
+      throw new Error(`Invalid status "${newStatus}". Must be one of: ${statusNames.join(", ")}`);
     }
 
     // Block transitions out of done
     const oldStatus = ticket.status;
     if (oldStatus === "done") {
-      throw new Error(
-        `${ticket.name} is done — done tickets cannot be transitioned`,
-      );
+      throw new Error(`${ticket.name} is done — done tickets cannot be transitioned`);
     }
 
     const oldIdx = statusNames.indexOf(oldStatus);
@@ -113,10 +95,7 @@ export class Service {
     // Forward transitions must follow the allowed path
     if (!isBackward) {
       const oldStatusDef = config.statuses.find((s) => s.name === oldStatus);
-      if (
-        oldStatusDef &&
-        !oldStatusDef.forwardTransitions.includes(newStatus)
-      ) {
+      if (oldStatusDef && !oldStatusDef.forwardTransitions.includes(newStatus)) {
         const allowed = oldStatusDef.forwardTransitions.join(", ");
         throw new Error(
           `${ticket.name} cannot go from "${oldStatus}" to "${newStatus}". Next: ${allowed || "none"}`,
@@ -127,7 +106,6 @@ export class Service {
       if (!exitResult.passed) {
         throw new ExitCriteriaError(ticket.name, newStatus, exitResult.errors);
       }
-
     }
 
     // Apply transition
@@ -135,12 +113,11 @@ export class Service {
 
     const now = new Date().toISOString();
 
-    if (newStatus === "inDevelopment" && !ticket.started) {
+    if (newStatus === "dev" && !ticket.started) {
       ticket.started = now;
     }
-    if (newStatus === "inDevelopment") {
+    if (newStatus === "dev") {
       ticket.team = teamId;
-      this.ensureTicketInSprint(ticket, now);
     }
     if (newStatus === "done" && !ticket.completed) {
       ticket.completed = now;
@@ -156,11 +133,6 @@ export class Service {
       to: newStatus,
       team: teamId,
     });
-
-    // Auto-archive sprint when last ticket moves to done
-    if (newStatus === "done" && ticket.sprintName) {
-      this.tryArchiveSprint(ticket.sprintName);
-    }
 
     return { ticket, oldStatus };
   }
@@ -194,9 +166,7 @@ export class Service {
       for (const subName of ticket.subtasks) {
         const sub = this.repo.loadTicketByName(subName);
         if (!sub) {
-          warnings.push(
-            `${ticket.name}: subtask "${subName}" not found`,
-          );
+          warnings.push(`${ticket.name}: subtask "${subName}" not found`);
         }
       }
     }
@@ -220,11 +190,7 @@ export class Service {
     "team",
   ]);
 
-  updateTicket(
-    name: string,
-    field: string,
-    value: string,
-  ): Ticket {
+  updateTicket(name: string, field: string, value: string): Ticket {
     if (!Service.UPDATABLE_FIELDS.has(field)) {
       throw new Error(
         `Cannot update field "${field}". Updatable fields: ${[...Service.UPDATABLE_FIELDS].join(", ")}`,
@@ -330,9 +296,7 @@ export class Service {
     }
 
     if (sprint.status !== "planning") {
-      throw new Error(
-        `Sprint "${sprintName}" is "${sprint.status}", not "planning".`,
-      );
+      throw new Error(`Sprint "${sprintName}" is "${sprint.status}", not "planning".`);
     }
 
     // Calculate total points from tickets
@@ -408,8 +372,7 @@ export class Service {
         const started = new Date(ticket.started);
         const completed = new Date(ticket.completed);
         if (!isNaN(started.getTime()) && !isNaN(completed.getTime())) {
-          totalHours +=
-            (completed.getTime() - started.getTime()) / (1000 * 60 * 60);
+          totalHours += (completed.getTime() - started.getTime()) / (1000 * 60 * 60);
         }
       }
     }
@@ -487,10 +450,7 @@ export class Service {
       totalHours: Math.round(totalHours * 100) / 100,
       avgPointsPerSprint: Math.round((totalPoints / count) * 10) / 10,
       avgHoursPerSprint: Math.round((totalHours / count) * 100) / 100,
-      pointsPerHour:
-        totalHours > 0
-          ? Math.round((totalPoints / totalHours) * 100) / 100
-          : 0,
+      pointsPerHour: totalHours > 0 ? Math.round((totalPoints / totalHours) * 100) / 100 : 0,
     };
   }
 
@@ -537,13 +497,9 @@ export class Service {
     return total;
   }
 
-  demoInit(
-    name: string,
-    description: string,
-    durationMs: number,
-  ): string {
+  demoInit(name: string, description: string, durationMs: number): string {
     const ticket = this.resolveTicket(name);
-    const sprintDir = this.getSprintDir(ticket);
+    const sprintDir = this.getStoryDir(ticket);
     if (!sprintDir) {
       throw new Error(`Ticket "${name}" is not in a sprint.`);
     }
@@ -561,13 +517,9 @@ export class Service {
     return demoDir;
   }
 
-  demoCapture(
-    name: string,
-    artifactName: string,
-    command: string,
-  ): string {
+  demoCapture(name: string, artifactName: string, command: string): string {
     const ticket = this.resolveTicket(name);
-    const sprintDir = this.getSprintDir(ticket);
+    const sprintDir = this.getStoryDir(ticket);
     if (!sprintDir) {
       throw new Error(`Ticket "${name}" is not in a sprint.`);
     }
@@ -594,13 +546,9 @@ export class Service {
     return artifactPath;
   }
 
-  demoFinish(
-    name: string,
-    artifactType: "video" | "terminal",
-    command: string,
-  ): string {
+  demoFinish(name: string, artifactType: "video" | "terminal", command: string): string {
     const ticket = this.resolveTicket(name);
-    const sprintDir = this.getSprintDir(ticket);
+    const sprintDir = this.getStoryDir(ticket);
     if (!sprintDir) {
       throw new Error(`Ticket "${name}" is not in a sprint.`);
     }
@@ -614,8 +562,7 @@ export class Service {
     const artifacts = fs
       .readdirSync(demoDir)
       .filter(
-        (f: string) =>
-          !f.startsWith("demo-") && !f.endsWith(".json") || f.startsWith("artifact"),
+        (f: string) => (!f.startsWith("demo-") && !f.endsWith(".json")) || f.startsWith("artifact"),
       )
       .filter((f: string) => !f.startsWith("demo-"));
 
@@ -631,7 +578,7 @@ export class Service {
 
   generateValidateDemoPrompt(name: string): string {
     const ticket = this.resolveTicket(name);
-    const sprintDir = this.getSprintDir(ticket);
+    const sprintDir = this.getStoryDir(ticket);
     if (!sprintDir) {
       throw new Error(`Ticket "${name}" is not in a sprint — no demo directory.`);
     }
@@ -752,122 +699,71 @@ export class Service {
     return this.repo.loadTicketByName(name);
   }
 
-  private checkExitCriteria(
-    currentStatus: string,
-    ticket: Ticket,
-  ): ExitCriteriaResult {
-    const sprintDir = this.getSprintDir(ticket);
+  private checkExitCriteria(currentStatus: string, ticket: Ticket): ExitCriteriaResult {
+    const storyDir = this.getStoryDir(ticket);
 
     switch (currentStatus) {
-      case "inRefinement":
-        return exitInRefinement(ticket);
-      case "inTesting":
-        return exitInTesting(ticket, this.projectRoot);
-      case "inReview":
-        return exitInReview(sprintDir);
-      case "buildingDemo":
-        return exitBuildingDemo(ticket, sprintDir);
-      case "agentValidatingDemo":
-        return exitAgentValidatingDemo(ticket, sprintDir);
-      case "humanValidatingDemo":
-        return exitHumanValidatingDemo(ticket);
+      case "refinement":
+        return exitRefinement(ticket);
+      case "review":
+        return exitReview(ticket, this.projectRoot, storyDir);
       case "done":
-        return exitDone(
-          ticket,
-          this.repo.loadAllTickets(),
-          this.projectRoot,
-        );
+        return exitDone(ticket, this.repo.loadAllTickets(), this.projectRoot);
       default:
         return { passed: true, errors: [] };
     }
   }
 
-  /**
-   * Ensure a ticket (and its subtasks) are in a sprint.
-   * If not, create a new sprint with a timestamp and add them.
-   */
-  private ensureTicketInSprint(ticket: Ticket, now: string): void {
-    if (ticket.sprintName) return;
-
-    // Check if parent is already in a sprint
+  private getStoryDir(ticket: Ticket): string | null {
+    const slug = ticket.name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
     if (ticket.parentName) {
-      const parent = this.resolveTicketSafe(ticket.parentName);
-      if (parent?.sprintName) {
-        // Add to parent's sprint
-        this.addToSprint(ticket.name, parent.sprintName);
-        // Create sprint directory
-        const sprintDir = `${this.projectRoot}/process/agile/sprints/${parent.sprintName}`;
-        fs.mkdirSync(sprintDir, { recursive: true });
-        return;
+      const parentSlug = ticket.parentName.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+      return `${this.projectRoot}/stories/${parentSlug}/${slug}`;
+    }
+    return `${this.projectRoot}/stories/${slug}`;
+  }
+
+  /**
+   * Create the story directory and story file for a ticket.
+   * Called automatically on ticket creation.
+   */
+  private ensureStoryDir(ticket: Ticket): void {
+    const storyDir = this.getStoryDir(ticket);
+    if (!storyDir) return;
+
+    fs.mkdirSync(storyDir, { recursive: true });
+
+    // Find the ticket filename for the relative import
+    const ticketFilename = this.repo.ticketFilename(ticket);
+    const slug = ticket.name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    const storyFile = `${storyDir}/${slug}.stories.ts`;
+
+    if (!fs.existsSync(storyFile)) {
+      const isSubtask = ticket.parentName !== null;
+      const relPrefix = isSubtask ? "../../.." : "../..";
+      const ticketsDir = "process/agile/tickets";
+      const relPath = `${relPrefix}/${ticketsDir}/${ticketFilename}`;
+      const sharedPath = isSubtask ? "../../_shared" : "../_shared";
+
+      let title: string;
+      if (ticket.parentName) {
+        title = `Tickets/${ticket.parentName}/${ticket.name} ${ticket.title}`;
+      } else {
+        title = `Tickets/${ticket.name} ${ticket.title}`;
       }
+
+      const content = `import ticket from "${relPath}";
+import { renderTicket } from "${sharedPath}/ticket-renderer.js";
+
+export default {
+  title: "${title}",
+  render: () => renderTicket(ticket),
+};
+
+export const Ticket = {};
+`;
+      fs.writeFileSync(storyFile, content, "utf-8");
     }
-
-    // Create a new sprint with timestamp
-    const date = now.slice(0, 10).replace(/-/g, "_");
-    const data = this.repo.loadSprints();
-    const sprintNum = data.sprints.length + 1;
-    const sprintName = `sprint_${sprintNum}_${date}`;
-
-    this.createSprint(sprintName);
-
-    // Add the root ticket (addToSprint also adds subtasks)
-    if (ticket.parentName) {
-      this.addToSprint(ticket.parentName, sprintName);
-    }
-    this.addToSprint(ticket.name, sprintName);
-
-    // Start the sprint immediately
-    this.startSprint(sprintName);
-
-    // Create sprint directory
-    const sprintDir = `${this.projectRoot}/process/agile/sprints/${sprintName}`;
-    fs.mkdirSync(sprintDir, { recursive: true });
-
-    console.log(`Auto-created sprint "${sprintName}" for ${ticket.name}`);
-  }
-
-  /**
-   * Check if all tickets in a sprint are done. If so, archive it.
-   */
-  private tryArchiveSprint(sprintName: string): void {
-    const data = this.repo.loadSprints();
-    const sprint = data.sprints.find((s) => s.name === sprintName);
-    if (!sprint || sprint.status === "complete") return;
-
-    const allTickets = this.repo.loadAllTickets();
-    const sprintTickets = allTickets.filter((t) => t.sprintName === sprintName);
-
-    const allDone = sprintTickets.length > 0 && sprintTickets.every((t) => t.status === "done");
-    if (!allDone) return;
-
-    // Complete the sprint (calculates velocity, etc.)
-    try {
-      const { sprint: completed } = this.completeSprint(sprintName);
-      console.log(
-        `Auto-completed sprint "${sprintName}": ` +
-          `${completed.completedPoints}/${completed.totalPoints} points`,
-      );
-    } catch {
-      // Sprint may not be completable (e.g. no points) — that's fine
-      return;
-    }
-
-    // Move sprint directory to archived
-    const sprintsDir = `${this.projectRoot}/process/agile/sprints`;
-    const srcDir = `${sprintsDir}/${sprintName}`;
-    const destDir = `${sprintsDir}/archived/${sprintName}`;
-
-    if (fs.existsSync(srcDir)) {
-      fs.mkdirSync(`${sprintsDir}/archived`, { recursive: true });
-      fs.renameSync(srcDir, destDir);
-      console.log(`Archived sprint directory: ${sprintName}`);
-    }
-  }
-
-  private getSprintDir(ticket: Ticket): string | null {
-    if (!ticket.sprintName) return null;
-    // Sprint directories are still in process/agile/sprints/<name>
-    return `${this.projectRoot}/process/agile/sprints/${ticket.sprintName}`;
   }
 
   private sumRecursive(parentName: string, allTickets: Ticket[]): number {
@@ -875,9 +771,7 @@ export class Service {
     const children = allTickets.filter((t) => t.parentName === parentName);
 
     for (const child of children) {
-      const grandchildren = allTickets.filter(
-        (t) => t.parentName === child.name,
-      );
+      const grandchildren = allTickets.filter((t) => t.parentName === child.name);
       if (grandchildren.length > 0) {
         total += this.sumRecursive(child.name, allTickets);
       } else {
@@ -895,9 +789,7 @@ export class ExitCriteriaError extends Error {
     public readonly targetStatus: string,
     public readonly criteriaErrors: string[],
   ) {
-    super(
-      `BLOCKED: ${ticketOrSprint} cannot transition to ${targetStatus}`,
-    );
+    super(`BLOCKED: ${ticketOrSprint} cannot transition to ${targetStatus}`);
     this.name = "ExitCriteriaError";
   }
 }

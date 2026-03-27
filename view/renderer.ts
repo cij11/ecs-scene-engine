@@ -132,6 +132,9 @@ export interface Renderer {
   /** Bind a render target's texture to a mesh object's material */
   setMaterialTexture(handle: RenderHandle, renderTargetId: string): void;
 
+  /** Clear a mesh object's material texture */
+  clearMaterialTexture(handle: RenderHandle): void;
+
   /** Render the current scene from the active camera (to the current render target/viewport) */
   render(): void;
 

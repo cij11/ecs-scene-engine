@@ -117,21 +117,17 @@ async function main() {
     // Collect camera handles
     const cameraHandles: number[] = [];
     for (const [, worldState] of viewSync.state.worlds) {
-      for (const [, camHandle] of worldState.entityCamera) {
-        cameraHandles.push(camHandle);
+      for (const [, cam] of worldState.entityCamera) {
+        cameraHandles.push(cam.handle);
       }
     }
 
     if (cameraHandles.length >= 2) {
-      // Split screen: left half = camera 1, right half = camera 2
-
-      // Camera 1 (top-down) — left half
       renderer.setViewport(0, 0, 0.5, 1);
       renderer.setActiveCamera(cameraHandles[0]!);
       renderer.lookAt(cameraHandles[0]!, 0, 0, 0);
       renderer.render();
 
-      // Camera 2 (perspective) — right half
       renderer.setViewport(0.5, 0, 0.5, 1);
       renderer.setActiveCamera(cameraHandles[1]!);
       renderer.lookAt(cameraHandles[1]!, 0, 0, 0);
@@ -139,7 +135,6 @@ async function main() {
 
       renderer.resetViewport();
     } else if (cameraHandles.length === 1) {
-      // Fallback: single camera
       renderer.setActiveCamera(cameraHandles[0]!);
       renderer.lookAt(cameraHandles[0]!, 0, 0, 0);
       renderer.render();
