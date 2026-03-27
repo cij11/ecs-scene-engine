@@ -1,0 +1,106 @@
+=== feat-ESE-0012-03: WGSL Codegen Demo ===
+
+── Kernel 1: Movement (8 bindings) ──
+struct Uniforms {
+  dt: f32,
+};
+
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+@group(0) @binding(1) var<storage, read> indices: array<u32>;
+@group(0) @binding(2) var<storage, read> vx: array<f32>;
+@group(0) @binding(3) var<storage, read> vy: array<f32>;
+@group(0) @binding(4) var<storage, read> vz: array<f32>;
+@group(0) @binding(5) var<storage, read_write> px: array<f32>;
+@group(0) @binding(6) var<storage, read_write> py: array<f32>;
+@group(0) @binding(7) var<storage, read_write> pz: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (id.x >= arrayLength(&indices)) { return; }
+  let eid = indices[id.x];
+  px[eid] = px[eid] + vx[eid] * uniforms.dt;
+  py[eid] = py[eid] + vy[eid] * uniforms.dt;
+  pz[eid] = pz[eid] + vz[eid] * uniforms.dt;
+}
+
+── Kernel 2: Particle Integrate (14 bindings) ──
+struct Uniforms {
+  dt: f32,
+  gravity: f32,
+};
+
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+@group(0) @binding(1) var<storage, read> indices: array<u32>;
+@group(0) @binding(2) var<storage, read> vx: array<f32>;
+@group(0) @binding(3) var<storage, read> vy: array<f32>;
+@group(0) @binding(4) var<storage, read> vz: array<f32>;
+@group(0) @binding(5) var<storage, read> age: array<f32>;
+@group(0) @binding(6) var<storage, read> maxAge: array<f32>;
+@group(0) @binding(7) var<storage, read_write> px: array<f32>;
+@group(0) @binding(8) var<storage, read_write> py: array<f32>;
+@group(0) @binding(9) var<storage, read_write> pz: array<f32>;
+@group(0) @binding(10) var<storage, read_write> r: array<f32>;
+@group(0) @binding(11) var<storage, read_write> g: array<f32>;
+@group(0) @binding(12) var<storage, read_write> b: array<f32>;
+@group(0) @binding(13) var<storage, read_write> a: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (id.x >= arrayLength(&indices)) { return; }
+  let eid = indices[id.x];
+  px[eid] = px[eid] + vx[eid] * uniforms.dt;
+  py[eid] = py[eid] + (vy[eid] + uniforms.gravity) * uniforms.dt;
+  pz[eid] = pz[eid] + vz[eid] * uniforms.dt;
+  age[eid] = age[eid] + uniforms.dt;
+  let t = age[eid] / maxAge[eid];
+  a[eid] = 1.0 - t;
+}
+
+── Kernel 3: Physics Integration (20 bindings) ──
+struct Uniforms {
+  dt: f32,
+  substeps: u32,
+};
+
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+@group(0) @binding(1) var<storage, read> indices: array<u32>;
+@group(0) @binding(2) var<storage, read> fx: array<f32>;
+@group(0) @binding(3) var<storage, read> fy: array<f32>;
+@group(0) @binding(4) var<storage, read> fz: array<f32>;
+@group(0) @binding(5) var<storage, read> ix: array<f32>;
+@group(0) @binding(6) var<storage, read> iy: array<f32>;
+@group(0) @binding(7) var<storage, read> iz: array<f32>;
+@group(0) @binding(8) var<storage, read> tx: array<f32>;
+@group(0) @binding(9) var<storage, read> ty: array<f32>;
+@group(0) @binding(10) var<storage, read> tz: array<f32>;
+@group(0) @binding(11) var<storage, read> active: array<u32>;
+@group(0) @binding(12) var<storage, read> mass: array<f32>;
+@group(0) @binding(13) var<storage, read> restitution: array<f32>;
+@group(0) @binding(14) var<storage, read_write> px: array<f32>;
+@group(0) @binding(15) var<storage, read_write> py: array<f32>;
+@group(0) @binding(16) var<storage, read_write> pz: array<f32>;
+@group(0) @binding(17) var<storage, read_write> vx: array<f32>;
+@group(0) @binding(18) var<storage, read_write> vy: array<f32>;
+@group(0) @binding(19) var<storage, read_write> vz: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (id.x >= arrayLength(&indices)) { return; }
+  let eid = indices[id.x];
+  if (active[eid] == 1u) {
+    px[eid] = tx[eid]; py[eid] = ty[eid]; pz[eid] = tz[eid];
+  } else {
+    vx[eid] = vx[eid] + (fx[eid] / mass[eid]) * uniforms.dt;
+    vy[eid] = vy[eid] + (fy[eid] / mass[eid]) * uniforms.dt;
+    vz[eid] = vz[eid] + (fz[eid] / mass[eid]) * uniforms.dt;
+    vx[eid] = vx[eid] + ix[eid] / mass[eid];
+    vy[eid] = vy[eid] + iy[eid] / mass[eid];
+    vz[eid] = vz[eid] + iz[eid] / mass[eid];
+    px[eid] = px[eid] + vx[eid] * uniforms.dt;
+    py[eid] = py[eid] + vy[eid] * uniforms.dt;
+    pz[eid] = pz[eid] + vz[eid] * uniforms.dt;
+  }
+}
+
+=== All 3 kernels generated successfully ===
+Note: device.createShaderModule() validation requires a WebGPU browser environment.

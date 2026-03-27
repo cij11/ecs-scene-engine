@@ -58,5 +58,23 @@ registerNodeHandler(
     near: node.data.near as number | undefined,
     far: node.data.far as number | undefined,
     zoom: node.data.zoom as number | undefined,
+    renderTarget: node.data.renderTarget as string | undefined,
+    aspectRatio: node.data.aspectRatio as number | undefined,
+    aspectRatioMismatch: node.data.aspectRatioMismatch as
+      | "stretch"
+      | "letterbox"
+      | "truncate"
+      | undefined,
+    recursionDepth: node.data.recursionDepth as number | undefined,
+  }),
+);
+
+registerNodeHandler(
+  "renderQuad",
+  (node): RenderObjectParams => ({
+    type: "renderQuad",
+    renderTarget: (node.data.renderTarget as string) ?? "",
+    width: (node.data.width as number) ?? 1,
+    height: (node.data.height as number) ?? 1,
   }),
 );

@@ -15,7 +15,8 @@ export type NodeType =
   | "camera"
   | "ecs"
   | "sceneSpawner"
-  | "scene";
+  | "scene"
+  | "renderQuad";
 
 export interface NodeData {
   [key: string]: unknown;

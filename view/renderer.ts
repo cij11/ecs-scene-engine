@@ -7,7 +7,7 @@
 export type RenderHandle = number;
 
 /** Object types the renderer can create */
-export type RenderObjectType = "mesh" | "light" | "camera";
+export type RenderObjectType = "mesh" | "light" | "camera" | "renderQuad";
 
 /** Light subtypes */
 export type LightType = "point" | "directional" | "spot" | "ambient";
@@ -49,9 +49,21 @@ export interface CameraParams {
   near?: number | undefined;
   far?: number | undefined;
   zoom?: number | undefined;
+  renderTarget?: string | undefined;
+  aspectRatio?: number | undefined;
+  aspectRatioMismatch?: "stretch" | "letterbox" | "truncate" | undefined;
+  recursionDepth?: number | undefined;
 }
 
-export type RenderObjectParams = MeshParams | LightParams | CameraParams;
+/** Parameters for creating a render quad object */
+export interface RenderQuadParams {
+  type: "renderQuad";
+  renderTarget: string;
+  width: number;
+  height: number;
+}
+
+export type RenderObjectParams = MeshParams | LightParams | CameraParams | RenderQuadParams;
 
 /** Transform data pushed to renderer objects each frame */
 export interface RenderTransform {
@@ -100,6 +112,27 @@ export interface Renderer {
 
   /** Resize the renderer to match container */
   resize(width: number, height: number): void;
+
+  /** Create an offscreen render target */
+  createRenderTarget(id: string, width: number, height: number): void;
+
+  /** Destroy a render target and free its resources */
+  destroyRenderTarget(id: string): void;
+
+  /** Direct rendering to a named render target, or null for the browser framebuffer */
+  setRenderTarget(id: string | null): void;
+
+  /** Set the viewport region (normalized 0-1 coordinates) */
+  setViewport(x: number, y: number, width: number, height: number): void;
+
+  /** Restore the full-window viewport */
+  resetViewport(): void;
+
+  /** Bind a render target's texture to a mesh object's material */
+  setMaterialTexture(handle: RenderHandle, renderTargetId: string): void;
+
+  /** Render the current scene from the active camera (to the current render target/viewport) */
+  render(): void;
 
   /** Dispose all resources */
   destroy(): void;

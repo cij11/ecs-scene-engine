@@ -17,6 +17,7 @@ export class ThreeJSRenderer implements Renderer {
   private objects = new Map<RenderHandle, THREE.Object3D>();
   private cameras = new Map<RenderHandle, THREE.Camera>();
   private baseScale = new Map<RenderHandle, [number, number, number]>();
+  private renderTargets = new Map<string, THREE.WebGLRenderTarget>();
   private nextHandle: RenderHandle = 1;
 
   async init(target: HTMLElement): Promise<void> {
@@ -111,6 +112,13 @@ export class ThreeJSRenderer implements Renderer {
         }
         break;
       }
+      case "renderQuad": {
+        const geometry = new THREE.PlaneGeometry(params.width, params.height);
+        const material = new THREE.MeshStandardMaterial({ color: 0x000000 });
+        obj = new THREE.Mesh(geometry, material);
+        // Texture binding happens later via setMaterialTexture
+        break;
+      }
       case "camera": {
         let cam: THREE.Camera;
         if (params.projection === "orthographic") {
@@ -199,8 +207,7 @@ export class ThreeJSRenderer implements Renderer {
   }
 
   endFrame(): void {
-    if (!this.threeRenderer) return;
-    this.threeRenderer.render(this.scene, this.activeCamera);
+    this.render();
   }
 
   resize(width: number, height: number): void {
@@ -213,9 +220,71 @@ export class ThreeJSRenderer implements Renderer {
     }
   }
 
+  createRenderTarget(id: string, width: number, height: number): void {
+    const target = new THREE.WebGLRenderTarget(width, height);
+    this.renderTargets.set(id, target);
+  }
+
+  destroyRenderTarget(id: string): void {
+    const target = this.renderTargets.get(id);
+    if (target) {
+      target.dispose();
+      this.renderTargets.delete(id);
+    }
+  }
+
+  setRenderTarget(id: string | null): void {
+    if (!this.threeRenderer) return;
+    if (id === null) {
+      this.threeRenderer.setRenderTarget(null);
+    } else {
+      const target = this.renderTargets.get(id);
+      if (target) this.threeRenderer.setRenderTarget(target);
+    }
+  }
+
+  setViewport(x: number, y: number, width: number, height: number): void {
+    if (!this.threeRenderer) return;
+    const size = this.threeRenderer.getSize(new THREE.Vector2());
+    const px = Math.round(x * size.x);
+    const py = Math.round(y * size.y);
+    const pw = Math.round(width * size.x);
+    const ph = Math.round(height * size.y);
+    this.threeRenderer.setViewport(px, py, pw, ph);
+    this.threeRenderer.setScissor(px, py, pw, ph);
+    this.threeRenderer.setScissorTest(true);
+  }
+
+  resetViewport(): void {
+    if (!this.threeRenderer) return;
+    const size = this.threeRenderer.getSize(new THREE.Vector2());
+    this.threeRenderer.setViewport(0, 0, size.x, size.y);
+    this.threeRenderer.setScissorTest(false);
+  }
+
+  setMaterialTexture(handle: RenderHandle, renderTargetId: string): void {
+    const obj = this.objects.get(handle);
+    if (!obj) return;
+    const target = this.renderTargets.get(renderTargetId);
+    if (!target) return;
+
+    if (obj instanceof THREE.Mesh && obj.material instanceof THREE.MeshStandardMaterial) {
+      obj.material.map = target.texture;
+      obj.material.needsUpdate = true;
+    }
+  }
+
+  render(): void {
+    if (!this.threeRenderer) return;
+    this.threeRenderer.render(this.scene, this.activeCamera);
+  }
+
   destroy(): void {
     for (const handle of this.objects.keys()) {
       this.removeObject(handle);
+    }
+    for (const [id] of this.renderTargets) {
+      this.destroyRenderTarget(id);
     }
     this.threeRenderer?.dispose();
     this.threeRenderer?.domElement.remove();

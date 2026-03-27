@@ -1,0 +1,4 @@
+{
+  "description": "Demonstrate: (1) simplified 8-status flow with inRefinement start, (2) exit criteria blocking transitions, (3) validate-demo command generating a context-free prompt, (4) ticket accept requiring interactive terminal confirmation.",
+  "durationMs": 15000
+}

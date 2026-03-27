@@ -1,9 +1,7 @@
 {
-  "command": "npm run agile -- various demo commands",
+  "command": "npx vitest run view/threejs/render-target.test.ts --reporter=verbose",
   "artifactType": "terminal",
   "artifacts": [
-    "artifact-1-status-flow.txt",
-    "artifact-2-validate-demo.txt",
-    "artifact-3-interactive-accept.txt"
+    "artifact-renderer-apis.txt"
   ]
 }

@@ -1,14 +1,14 @@
-# Review: task-ESE-0010
+# Review: feat-ESE-0015-01
 
 ## Summary
-Simplified status flow from 11 to 8 statuses, renamed gates to exit criteria, added validate-demo command, interactive ticket accept, and demo-init/capture/finish commands.
+Added 7 new methods to Renderer interface and ThreeJSRenderer: createRenderTarget, destroyRenderTarget, setRenderTarget, setViewport, resetViewport, setMaterialTexture, render. 10 new unit tests covering render target lifecycle, viewport control, split screen pattern, nested view pattern, and cleanup.
 
 ## Findings
-- No issues found after terminology rename completed (GateResult → ExitCriteriaResult, GateError → ExitCriteriaError, gateErrors → criteriaErrors)
-- All 156 tests pass
-- validate-demo generates context-free prompt with no source code
-- ticket accept correctly blocks non-TTY input
-- inRefinement added as starting state with field-check exit criteria
+- All AC items verified
+- Viewport uses normalized 0-1 coords, correctly converted to pixels in ThreeJS impl
+- setMaterialTexture checks for MeshStandardMaterial before binding
+- render() factored out of endFrame() for multi-pass use
+- Render targets cleaned up in destroy()
 
 ## Severity
 No issues.

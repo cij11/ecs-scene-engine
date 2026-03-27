@@ -1,20 +1,12 @@
 {
-  "overallInterpretation": "The demo shows a simplified agile workflow with an 8-status flow where tickets start in inRefinement, exit criteria that block status transitions when required fields are missing, a validate-demo command that generates a self-contained context-free prompt for an external validation agent, and a ticket accept command that enforces interactive terminal usage. All four claimed capabilities are exercised through terminal command output.",
+  "overallInterpretation": "The artifact is terminal output from a Vitest run of render-target.test.ts showing 10 passing tests across three groups: render target APIs, viewport APIs, and multi-pass rendering. The tests collectively demonstrate creating and tracking render targets, destroying them, setting a render target for offscreen rendering, restoring the browser framebuffer, binding a render target texture to a mesh material, setting viewport regions with normalized coordinates, resetting viewport to full window, split-screen viewport support, rendering to texture then to screen (nested view pattern), and cleanup of render targets on destroy. All 10 tests pass with zero failures.",
   "artifacts": [
     {
-      "file": "artifact-1-status-flow.txt",
-      "interpretation": "Demonstrates the 8-status flow starting from inRefinement. A newly created ticket (task-ESE-0014) lands in inRefinement. Transitioning to readyForDev is blocked by exit criteria listing six missing fields (Description, Acceptance Criteria, Testing Scenarios, Size, Stakeholder Understanding, Demo Deliverable). Attempting to skip a status (inRefinement to inDevelopment) is also rejected. A ticket listing shows multiple tickets in various statuses confirming the flow is active across the project."
-    },
-    {
-      "file": "artifact-2-validate-demo.txt",
-      "interpretation": "Demonstrates the validate-demo command by running it against task-ESE-0006. The output is a complete, context-free prompt containing the demo-expected.json, demo-readme.json, the full text of each artifact, and instructions for a validation agent to produce demo-actual.json. This confirms the command generates a self-contained validation prompt that requires no prior knowledge of the codebase."
-    },
-    {
-      "file": "artifact-3-interactive-accept.txt",
-      "interpretation": "Demonstrates that the ticket accept command (run against task-ESE-0010) refuses to proceed when not in an interactive terminal, returning the error 'ticket accept requires an interactive terminal.' This confirms the interactive confirmation gate is enforced."
+      "file": "artifact-renderer-apis.txt",
+      "interpretation": "Vitest verbose output showing 10/10 tests passing in 296ms. The tests cover all five capabilities described in the expected demo: (1) create a render target ('creates and tracks a render target'), (2) render to it ('sets render target for offscreen rendering', 'renders to texture then to screen'), (3) set viewport region ('sets viewport region', 'resets viewport to full window', 'supports split screen'), (4) bind texture to mesh material ('binds a render target texture to a mesh material'), and (5) clean up ('destroys a render target', 'supports cleanup of render targets on destroy')."
     }
   ],
   "demoMatchesExpected": true,
   "allQuestionsAnswered": true,
-  "validatedBy": "claude-opus-4-6-demo-validator-20260327"
+  "validatedBy": "claude-opus-4-6-demo-validator"
 }

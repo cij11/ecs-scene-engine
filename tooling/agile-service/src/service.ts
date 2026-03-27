@@ -140,6 +140,7 @@ export class Service {
     }
     if (newStatus === "inDevelopment") {
       ticket.team = teamId;
+      this.ensureTicketInSprint(ticket, now);
     }
     if (newStatus === "done" && !ticket.completed) {
       ticket.completed = now;
@@ -155,6 +156,11 @@ export class Service {
       to: newStatus,
       team: teamId,
     });
+
+    // Auto-archive sprint when last ticket moves to done
+    if (newStatus === "done" && ticket.sprintName) {
+      this.tryArchiveSprint(ticket.sprintName);
+    }
 
     return { ticket, oldStatus };
   }
@@ -196,6 +202,45 @@ export class Service {
     }
 
     return { errors, warnings };
+  }
+
+  private static readonly UPDATABLE_FIELDS: ReadonlySet<string> = new Set([
+    "title",
+    "description",
+    "acceptanceCriteria",
+    "demoDeliverable",
+    "testingScenarios",
+    "testingNotes",
+    "size",
+    "sizeLabel",
+    "stakeholderUnderstanding",
+    "blockers",
+    "knowledgeGaps",
+    "comments",
+    "team",
+  ]);
+
+  updateTicket(
+    name: string,
+    field: string,
+    value: string,
+  ): Ticket {
+    if (!Service.UPDATABLE_FIELDS.has(field)) {
+      throw new Error(
+        `Cannot update field "${field}". Updatable fields: ${[...Service.UPDATABLE_FIELDS].join(", ")}`,
+      );
+    }
+    const ticket = this.resolveTicket(name);
+
+    if (field === "size") {
+      const num = Number(value);
+      (ticket as unknown as Record<string, unknown>)[field] = isNaN(num) ? null : num;
+    } else {
+      (ticket as unknown as Record<string, unknown>)[field] = value;
+    }
+
+    this.repo.saveTicket(ticket);
+    return ticket;
   }
 
   listTickets(): Ticket[] {
@@ -242,9 +287,12 @@ export class Service {
     }
 
     if (sprint.ticketNames.includes(ticketName)) {
-      throw new Error(
-        `Ticket "${ticketName}" is already in sprint "${sprintName}".`,
-      );
+      // Idempotent — ensure ticket's sprintName is set even if already in array
+      if (!ticket.sprintName) {
+        ticket.sprintName = sprintName;
+        this.repo.saveTicket(ticket);
+      }
+      return;
     }
 
     // Update ticket
@@ -731,6 +779,88 @@ export class Service {
         );
       default:
         return { passed: true, errors: [] };
+    }
+  }
+
+  /**
+   * Ensure a ticket (and its subtasks) are in a sprint.
+   * If not, create a new sprint with a timestamp and add them.
+   */
+  private ensureTicketInSprint(ticket: Ticket, now: string): void {
+    if (ticket.sprintName) return;
+
+    // Check if parent is already in a sprint
+    if (ticket.parentName) {
+      const parent = this.resolveTicketSafe(ticket.parentName);
+      if (parent?.sprintName) {
+        // Add to parent's sprint
+        this.addToSprint(ticket.name, parent.sprintName);
+        // Create sprint directory
+        const sprintDir = `${this.projectRoot}/process/agile/sprints/${parent.sprintName}`;
+        fs.mkdirSync(sprintDir, { recursive: true });
+        return;
+      }
+    }
+
+    // Create a new sprint with timestamp
+    const date = now.slice(0, 10).replace(/-/g, "_");
+    const data = this.repo.loadSprints();
+    const sprintNum = data.sprints.length + 1;
+    const sprintName = `sprint_${sprintNum}_${date}`;
+
+    this.createSprint(sprintName);
+
+    // Add the root ticket (addToSprint also adds subtasks)
+    if (ticket.parentName) {
+      this.addToSprint(ticket.parentName, sprintName);
+    }
+    this.addToSprint(ticket.name, sprintName);
+
+    // Start the sprint immediately
+    this.startSprint(sprintName);
+
+    // Create sprint directory
+    const sprintDir = `${this.projectRoot}/process/agile/sprints/${sprintName}`;
+    fs.mkdirSync(sprintDir, { recursive: true });
+
+    console.log(`Auto-created sprint "${sprintName}" for ${ticket.name}`);
+  }
+
+  /**
+   * Check if all tickets in a sprint are done. If so, archive it.
+   */
+  private tryArchiveSprint(sprintName: string): void {
+    const data = this.repo.loadSprints();
+    const sprint = data.sprints.find((s) => s.name === sprintName);
+    if (!sprint || sprint.status === "complete") return;
+
+    const allTickets = this.repo.loadAllTickets();
+    const sprintTickets = allTickets.filter((t) => t.sprintName === sprintName);
+
+    const allDone = sprintTickets.length > 0 && sprintTickets.every((t) => t.status === "done");
+    if (!allDone) return;
+
+    // Complete the sprint (calculates velocity, etc.)
+    try {
+      const { sprint: completed } = this.completeSprint(sprintName);
+      console.log(
+        `Auto-completed sprint "${sprintName}": ` +
+          `${completed.completedPoints}/${completed.totalPoints} points`,
+      );
+    } catch {
+      // Sprint may not be completable (e.g. no points) — that's fine
+      return;
+    }
+
+    // Move sprint directory to archived
+    const sprintsDir = `${this.projectRoot}/process/agile/sprints`;
+    const srcDir = `${sprintsDir}/${sprintName}`;
+    const destDir = `${sprintsDir}/archived/${sprintName}`;
+
+    if (fs.existsSync(srcDir)) {
+      fs.mkdirSync(`${sprintsDir}/archived`, { recursive: true });
+      fs.renameSync(srcDir, destDir);
+      console.log(`Archived sprint directory: ${sprintName}`);
     }
   }
 

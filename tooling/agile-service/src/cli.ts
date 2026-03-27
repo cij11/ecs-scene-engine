@@ -24,6 +24,7 @@ function usage(): never {
   console.error("");
   console.error("Ticket commands:");
   console.error("  ticket create <type> <title> [parent]");
+  console.error("  ticket update <name> <field> <value>");
   console.error("  ticket status <name> <status> [team]");
   console.error("  ticket accept <name>");
   console.error("  ticket validate");
@@ -101,6 +102,20 @@ function handleTicket(action: string, args: string[]): void {
       }
       const ticket = service.createTicket(type, title, parent);
       console.log(`Created ${ticket.name} (${ticket.id})`);
+      break;
+    }
+
+    case "update": {
+      const name = args[0];
+      const field = args[1];
+      const value = args.slice(2).join(" ");
+      if (!name || !field) {
+        console.error("Usage: ticket update <name> <field> [value]");
+        console.error("  Omit value to clear the field.");
+        process.exit(1);
+      }
+      const updated = service.updateTicket(name, field, value);
+      console.log(`${updated.name}: ${field} updated`);
       break;
     }
 

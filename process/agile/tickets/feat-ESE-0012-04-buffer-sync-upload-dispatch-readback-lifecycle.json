@@ -3,7 +3,7 @@
   "name": "feat-ESE-0012-04",
   "type": "task",
   "title": "Buffer sync: upload, dispatch, readback lifecycle",
-  "status": "inRefinement",
+  "status": "readyForDev",
   "description": "Implement the buffer sync system: uploading CPU TypedArrays to GPU before dispatch, dispatching compute passes, and reading back GPU-written buffers to CPU TypedArrays after dispatch. Integrates with the existing pipeline phases via sync points.\n\nPhysics authority model: CPU game logic writes intent components (GpuForce, GpuImpulse, GpuTeleport) in preUpdate. Upload syncs these + current Transform/Velocity to GPU. GPU physics runs in update. Readback copies GPU-written Transform/Velocity back before postUpdate. GPU-authoritative components (GpuParticleLife, GpuParticleVisual) skip readback.\n\nInspired by Bevy/Rapier's SyncBackend→StepSimulation→Writeback pipeline and bevy_hanabi's zero-sync-for-GPU-only data. See engine/gpu/architecture.md sections 3 and 7.",
   "acceptanceCriteria": "- uploadBuffers(): copies dirty CPU TypedArrays to corresponding GPUBuffers via queue.writeBuffer\n- Upload includes intent components (GpuForce, GpuImpulse, GpuTeleport) written by CPU game logic\n- dispatchKernel(): creates command encoder, compute pass, sets pipeline + bind group, dispatches workgroups, submits\n- readbackBuffers(): maps GPU-written buffers back to CPU TypedArrays for components in the kernel write set\n- createGpuSystem(): wraps upload-dispatch-readback into a SystemFn compatible with addSystem(). Registers write claims on GpuContext for authority guards.\n- GPU-authoritative components (marked as such) skip readback unless explicitly requested\n- Intent components (GpuForce, GpuImpulse) zeroed by GPU kernel after consumption — readback reflects zeroed state\n- Unit tests for upload correctness, dispatch execution, readback correctness, intent consumption",
   "demoDeliverable": "Create a world with 100 entities having Transform + Velocity + GpuRigidBody. In preUpdate, a CPU system applies GpuForce to 10 entities and GpuTeleport to 1 entity. GPU physics kernel reads intents, integrates, writes Transform + Velocity. After readback, show: (1) teleported entity at new position, (2) forced entities accelerated, (3) GpuForce/GpuImpulse zeroed after consumption. Also show authority guard: CPU attempt to write Transform directly on a GpuRigidBody entity throws.",
@@ -21,5 +21,5 @@
   "knowledgeGaps": "",
   "comments": "",
   "parentName": "feat-ESE-0012",
-  "sprintName": null
+  "sprintName": "sprint_4_2026_03_27"
 }

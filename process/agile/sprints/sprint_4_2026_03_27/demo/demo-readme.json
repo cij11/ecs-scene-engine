@@ -1,0 +1,9 @@
+{
+  "command": "cat engine/gpu/architecture.md",
+  "artifactType": "terminal",
+  "artifacts": [
+    "artifact-arch-walkthrough",
+    "artifact-context-demo",
+    "artifact-kernel-demo"
+  ]
+}

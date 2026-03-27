@@ -3,7 +3,7 @@
   "name": "feat-ESE-0012-06",
   "type": "task",
   "title": "Multi-pass GPU physics: broadphase + narrowphase + integration",
-  "status": "inRefinement",
+  "status": "readyForDev",
   "description": "Implement multi-pass GPU physics with the physics authority model: broadphase collision detection via spatial hashing, narrowphase sphere-sphere intersection, and Verlet integration with configurable substeps. All passes execute in a single command encoder submission with no CPU round-trips.\n\nPhysics has sole write authority over Transform and Velocity for entities with GpuRigidBody. Game logic communicates via intent components: GpuForce (accumulated forces), GpuImpulse (instant velocity change), GpuTeleport (position override). The integration kernel reads intents, applies them, integrates, and zeroes consumed intents.\n\nBroadphase: uniform grid spatial hash with atomic insertion (Unity GPU Physics pattern). Narrowphase: 27-neighbor cell search with sphere-sphere tests. Integration: Verlet with N substeps in a GPU loop, consuming intents on first substep.\n\nReferences: GPU Gems Ch.32, Unity GPU Physics (7-kernel pipeline), Godot's RigidBody authority model. See engine/gpu/architecture.md sections 7 and 8.",
   "acceptanceCriteria": "- GpuRigidBody and GpuCollider (sphere) components defined (gpu-prefixed)\n- GpuForce, GpuImpulse, GpuTeleport intent components defined\n- Broadphase kernel: spatial hash grid with atomic compare-exchange insertion, 4 entities per cell\n- Narrowphase kernel: 27-neighbor search, sphere-sphere overlap, impulse response writes to Velocity\n- Integration kernel: reads GpuForce/GpuImpulse/GpuTeleport, applies Verlet integration with configurable substep count, zeroes consumed intents\n- All passes dispatch in single command encoder (clear, populate, detect, integrate)\n- GPU physics writes to shared Transform + Velocity; CPU rendering reads after readback\n- CPU game logic applies forces/impulses via intent components, NOT by writing Transform directly\n- Authority guard: CPU write to Transform on GpuRigidBody entity throws in dev mode\n- 500+ rigid bodies colliding at stable framerate\n- Collision pairs match brute-force CPU reference",
   "demoDeliverable": "Browser demo: 500+ bouncing spheres in a box. Spheres spawn from top, fall under gravity, collide with each other and walls, settle into piles. Toggle substep count (1, 4, 8) via UI to show stability improvement. Interactive: click to apply GpuImpulse to a sphere (CPU writes intent, GPU applies it next frame). Button to teleport a sphere to a random position via GpuTeleport. Console logs collision pair count per frame and GPU dispatch time. Debug overlay shows spatial hash grid occupancy.",
@@ -21,5 +21,5 @@
   "knowledgeGaps": "",
   "comments": "",
   "parentName": "feat-ESE-0012",
-  "sprintName": null
+  "sprintName": "sprint_4_2026_03_27"
 }

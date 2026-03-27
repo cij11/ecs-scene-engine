@@ -1,0 +1,19 @@
+
+ RUN  v4.1.1 /Users/chrisjolly/Projects/ecs-scene-engine
+
+ ✓ view/threejs/render-target.test.ts > Renderer — render target APIs > creates and tracks a render target 4ms
+ ✓ view/threejs/render-target.test.ts > Renderer — render target APIs > destroys a render target 0ms
+ ✓ view/threejs/render-target.test.ts > Renderer — render target APIs > sets render target for offscreen rendering 0ms
+ ✓ view/threejs/render-target.test.ts > Renderer — render target APIs > restores browser framebuffer with null 0ms
+ ✓ view/threejs/render-target.test.ts > Renderer — render target APIs > binds a render target texture to a mesh material 0ms
+ ✓ view/threejs/render-target.test.ts > Renderer — viewport APIs > sets viewport region (normalized coordinates) 0ms
+ ✓ view/threejs/render-target.test.ts > Renderer — viewport APIs > resets viewport to full window 0ms
+ ✓ view/threejs/render-target.test.ts > Renderer — viewport APIs > supports split screen — left and right viewports 1ms
+ ✓ view/threejs/render-target.test.ts > Renderer — multi-pass rendering > renders to texture then to screen (nested view pattern) 1ms
+ ✓ view/threejs/render-target.test.ts > Renderer — multi-pass rendering > supports cleanup of render targets on destroy 0ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  23:28:32
+   Duration  296ms (transform 34ms, setup 0ms, import 51ms, tests 10ms, environment 0ms)
+
