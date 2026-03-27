@@ -1,11 +1,12 @@
 {
-  "command": "npx vitest run view/aspect-ratio.test.ts",
-  "artifactType": "terminal",
+  "command": "npx tsx tooling/capture-split-screen.ts",
+  "artifactType": "video",
   "artifacts": [
     "artifact-aspect-ratio.txt",
     "artifact-node-types.txt",
     "artifact-render-graph.txt",
     "artifact-render-loop.txt",
-    "artifact-renderer-apis.txt"
+    "artifact-renderer-apis.txt",
+    "split-screen-screenshot.png"
   ]
 }

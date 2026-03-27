@@ -41,6 +41,7 @@ const camera1Scene = createNode("node", {}, [
       far: 100,
       zoom: 1,
       renderTarget: "browser",
+      backgroundColor: 0x1a1a2e,
     }),
   ]),
 ]);
@@ -55,6 +56,7 @@ const camera2Scene = createNode("node", {}, [
       near: 0.1,
       far: 100,
       renderTarget: "browser",
+      backgroundColor: 0x2e1a1a,
     }),
   ]),
 ]);
@@ -100,8 +102,6 @@ async function main() {
     renderer.resize(container.clientWidth, container.clientHeight);
   });
 
-  console.log("Setup complete, starting loop");
-
   // --- Game loop with split screen ---
   let lastTime = performance.now();
 
@@ -121,8 +121,6 @@ async function main() {
         cameraHandles.push(camHandle);
       }
     }
-
-    console.log("Frame: cameras=" + cameraHandles.length);
 
     if (cameraHandles.length >= 2) {
       // Split screen: left half = camera 1, right half = camera 2

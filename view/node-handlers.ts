@@ -59,6 +59,7 @@ registerNodeHandler(
     far: node.data.far as number | undefined,
     zoom: node.data.zoom as number | undefined,
     renderTarget: node.data.renderTarget as string | undefined,
+    backgroundColor: node.data.backgroundColor as number | undefined,
     aspectRatio: node.data.aspectRatio as number | undefined,
     aspectRatioMismatch: node.data.aspectRatioMismatch as
       | "stretch"

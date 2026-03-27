@@ -50,6 +50,7 @@ export interface CameraParams {
   far?: number | undefined;
   zoom?: number | undefined;
   renderTarget?: string | undefined;
+  backgroundColor?: number | undefined;
   aspectRatio?: number | undefined;
   aspectRatioMismatch?: "stretch" | "letterbox" | "truncate" | undefined;
   recursionDepth?: number | undefined;

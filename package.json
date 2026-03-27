@@ -33,7 +33,9 @@
     "ticket:validate": "npx tsx tooling/agile-service/src/cli.ts ticket validate",
     "ticket:accept": "npx tsx tooling/agile-service/src/cli.ts ticket accept",
     "capture": "npx tsx tooling/capture/capture.ts",
-    "agile": "npx tsx tooling/agile-service/src/cli.ts"
+    "agile": "npx tsx tooling/agile-service/src/cli.ts",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "repository": {
     "type": "git",
@@ -60,7 +62,16 @@
     "typescript": "5.9",
     "typescript-eslint": "^8.57.2",
     "vite": "^8.0.2",
-    "vitest": "^4.1.1"
+    "vitest": "^4.1.1",
+    "storybook": "^10.3.3",
+    "@storybook/html-vite": "^10.3.3",
+    "@chromatic-com/storybook": "^5.1.1",
+    "@storybook/addon-vitest": "^10.3.3",
+    "@storybook/addon-a11y": "^10.3.3",
+    "@storybook/addon-docs": "^10.3.3",
+    "eslint-plugin-storybook": "^10.3.3",
+    "@vitest/browser-playwright": "^4.1.1",
+    "@vitest/coverage-v8": "^4.1.1"
   },
   "dependencies": {
     "@types/three": "^0.183.1",

@@ -1,12 +1,32 @@
 {
-  "overallInterpretation": "The artifact-aspect-ratio.txt shows vitest output with 7/7 tests passing across all three viewport modes (stretch, letterbox, truncate) plus a no-mismatch baseline case. This directly demonstrates the expected behavior: aspect ratio viewport calculations for stretch, letterbox, and truncate modes. The tests cover fills-entire-destination (stretch), bars top/bottom and left/right (letterbox), crops sides and top/bottom (truncate), and same-aspect-ratio identity. All passed in 311ms. Note: demo-readme.json lists 5 artifacts but only artifact-aspect-ratio.txt was in scope for this review; the other 4 artifacts were not evaluated.",
+  "overallInterpretation": "The screenshot shows a browser window split vertically into two distinct viewports. The left half has a dark navy background and displays a yellow circle and a small blue square, both appearing flat and viewed from directly above, consistent with a top-down orthographic projection. The right half has a dark reddish-brown background and displays the same two objects — a blue rectangular box and a yellow ellipse — rendered from a side angle with visible 3D depth, consistent with a perspective side view. Both viewports clearly render the same scene (same two objects: one yellow, one blue) from different camera angles. All five text artifacts show passing test suites: aspect-ratio (7 tests), node-types (Camera and RenderQuad configuration output), render-graph (8 tests), render-loop (6 tests), and renderer-apis (10 tests) — all green with zero failures.",
   "artifacts": [
     {
+      "file": "split-screen-screenshot.png",
+      "interpretation": "Browser window split into two viewports by a vertical dividing line. Left half (dark navy background): top-down orthographic view showing a yellow circle near center and a small blue square in the lower-left area — objects appear flat with no perspective distortion. Right half (dark reddish-brown background): perspective side view showing the same yellow object as an ellipse and the blue object as a 3D rectangular box — both rendered with depth foreshortening from a side camera angle. The two viewports render the same scene from different cameras."
+    },
+    {
       "file": "artifact-aspect-ratio.txt",
-      "interpretation": "Vitest run of view/aspect-ratio.test.ts: 7 tests passed, 0 failed. Covers stretch (fills entire destination), letterbox (bars top/bottom for wide-on-tall, bars left/right for square-on-wide, confirmed as default mode), truncate (crops sides for wide-on-tall, crops top/bottom for square-on-wide), and a baseline case where all modes produce a full viewport when aspect ratios match. This fully validates the demo expectation."
+      "interpretation": "Vitest output showing 7 passing tests for computeViewport covering stretch, letterbox, and truncate aspect-ratio modes. All tests pass in 311ms."
+    },
+    {
+      "file": "artifact-node-types.txt",
+      "interpretation": "Console output demonstrating Camera and RenderQuad node types. Camera has renderTarget 'tv-feed', aspectRatio 16:9, letterbox mismatch mode, and recursionDepth 2. RenderQuad references the same 'tv-feed' target with dimensions 2x1.5. Default camera has no renderTarget."
+    },
+    {
+      "file": "artifact-render-graph.txt",
+      "interpretation": "Vitest output showing 8 passing tests for buildRenderOrder covering independent cameras, split screen ordering, TV-in-scene dependency ordering, hall-of-mirrors recursion, and mixed scenarios. All tests pass in 324ms."
+    },
+    {
+      "file": "artifact-render-loop.txt",
+      "interpretation": "Vitest output showing 6 passing tests for renderFrame covering single camera, dual camera ordering, texture-to-quad binding, render target setup, recursive camera passes, and viewport reset. All tests pass in 372ms."
+    },
+    {
+      "file": "artifact-renderer-apis.txt",
+      "interpretation": "Vitest output showing 10 passing tests for renderer render-target and viewport APIs, including render target creation/destruction, offscreen rendering, texture binding, viewport setting/resetting, split-screen support, and multi-pass nested view rendering. All tests pass in 296ms."
     }
   ],
   "demoMatchesExpected": true,
   "allQuestionsAnswered": true,
-  "validatedBy": "claude-opus-4-6-demo-agent"
+  "validatedBy": "claude-opus-4-6-demo-validator"
 }

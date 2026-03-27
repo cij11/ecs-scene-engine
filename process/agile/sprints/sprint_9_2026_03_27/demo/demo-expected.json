@@ -1,4 +1,4 @@
 {
-  "description": "Demonstrate aspect ratio viewport calculations for stretch, letterbox, and truncate modes.",
-  "durationMs": 5000
+  "description": "Screenshot showing the browser window split into two viewports — left half: top-down orthographic view, right half: perspective side view — each rendering the same scene from a different camera angle.",
+  "durationMs": 10000
 }

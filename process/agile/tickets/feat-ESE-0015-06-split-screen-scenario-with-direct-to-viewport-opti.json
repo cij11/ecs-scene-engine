@@ -3,7 +3,7 @@
   "name": "feat-ESE-0015-06",
   "type": "feat",
   "title": "Split screen scenario with direct-to-viewport optimization",
-  "status": "inDevelopment",
+  "status": "done",
   "description": "Create a working split screen demo: two cameras viewing the same scene from different angles, each rendering to half the browser window via viewport scissoring. Wire up renderFrame with the existing game scene. Capture screenshots via Playwright to prove it works visually.",
   "acceptanceCriteria": "- Two cameras render side-by-side in the browser window\n- Each camera shows the scene from a different angle\n- Viewport scissoring used (no intermediate textures)\n- Visual screenshot captured showing both views\n- Existing scene/game content visible in both halves",
   "demoDeliverable": "Screenshot showing the browser window split into two viewports, each rendering the scene from a different camera angle.",
@@ -13,13 +13,13 @@
   "sizeLabel": null,
   "subtasks": [],
   "stakeholderUnderstanding": "An actual rendering implementation of an important render type — showing multiple sibling views within the same parent viewport.",
-  "demoAccepted": false,
+  "demoAccepted": true,
   "team": "unknown",
   "started": "2026-03-27T11:36:27.192Z",
-  "completed": null,
+  "completed": "2026-03-27T12:09:35.301Z",
   "blockers": "",
   "knowledgeGaps": "",
   "comments": "",
   "parentName": "feat-ESE-0015",
-  "sprintName": "sprint_5_2026_03_27"
+  "sprintName": "sprint_9_2026_03_27"
 }

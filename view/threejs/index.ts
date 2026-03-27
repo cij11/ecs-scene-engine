@@ -16,6 +16,7 @@ export class ThreeJSRenderer implements Renderer {
 
   private objects = new Map<RenderHandle, THREE.Object3D>();
   private cameras = new Map<RenderHandle, THREE.Camera>();
+  private cameraBackgrounds = new Map<RenderHandle, THREE.Color>();
   private baseScale = new Map<RenderHandle, [number, number, number]>();
   private renderTargets = new Map<string, THREE.WebGLRenderTarget>();
   private nextHandle: RenderHandle = 1;
@@ -140,6 +141,9 @@ export class ThreeJSRenderer implements Renderer {
           );
         }
         this.cameras.set(handle, cam);
+        if (params.backgroundColor !== undefined) {
+          this.cameraBackgrounds.set(handle, new THREE.Color(params.backgroundColor));
+        }
         obj = cam;
         break;
       }
@@ -194,7 +198,13 @@ export class ThreeJSRenderer implements Renderer {
 
   setActiveCamera(handle: RenderHandle): void {
     const cam = this.cameras.get(handle);
-    if (cam) this.activeCamera = cam;
+    if (cam) {
+      this.activeCamera = cam;
+      const bg = this.cameraBackgrounds.get(handle);
+      if (bg) {
+        this.scene.background = bg;
+      }
+    }
   }
 
   lookAt(handle: RenderHandle, x: number, y: number, z: number): void {
