@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GPU Physics — Visual Demo</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { background: #000; overflow: hidden; }
+      canvas { display: block; }
+      #hud {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: #eee;
+        font-family: monospace;
+        font-size: 13px;
+        background: rgba(0,0,0,0.7);
+        padding: 8px 12px;
+        border-radius: 4px;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="hud"></div>
+    <script type="module" src="./gpu-physics-visual.ts"></script>
+  </body>
+</html>

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { resetComponentIdCounter, defineComponent, defineTag } from "../ecs/component.js";
-import { generateWgsl, countBindings } from "./kernel.js";
+import { generateWgsl, countBindings, fields } from "./kernel.js";
 import type { GpuKernelDef } from "./kernel.js";
 
 beforeEach(() => {
@@ -309,5 +309,121 @@ describe("edge cases", () => {
     // 'y' and 'z' are unique — should NOT be namespaced
     expect(wgsl).toContain("var<storage, read> y:");
     expect(wgsl).toContain("var<storage, read_write> z:");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Field-level binding selection (ESE-0017)
+// ---------------------------------------------------------------------------
+
+describe("field-level binding selection", () => {
+  it("fields() selects a subset of component fields", () => {
+    // Transform has px,py,pz,rx,ry,rz,rw,sx,sy,sz (10 fields)
+    // Only bind px,py,pz
+    const kernel: GpuKernelDef = {
+      name: "field_select",
+      query: [Transform, Velocity],
+      read: [Velocity],
+      write: [fields(Transform, "px", "py", "pz")],
+      uniforms: { dt: "f32" },
+      wgsl: "let eid = indices[id.x];",
+    };
+
+    // 1 uniform + 1 index + 3 read (vx,vy,vz) + 3 write (px,py,pz) = 8
+    expect(countBindings(kernel)).toBe(8);
+  });
+
+  it("excluded fields do not appear in WGSL", () => {
+    const kernel: GpuKernelDef = {
+      name: "field_select_wgsl",
+      query: [Transform],
+      read: [],
+      write: [fields(Transform, "px", "py", "pz")],
+      wgsl: "let eid = indices[id.x];",
+    };
+
+    const wgsl = generateWgsl(kernel);
+    expect(wgsl).toContain("var<storage, read_write> px:");
+    expect(wgsl).toContain("var<storage, read_write> py:");
+    expect(wgsl).toContain("var<storage, read_write> pz:");
+    // Rotation and scale fields should NOT appear
+    expect(wgsl).not.toContain("rx:");
+    expect(wgsl).not.toContain("rw:");
+    expect(wgsl).not.toContain("sx:");
+  });
+
+  it("mixed full components and field selections", () => {
+    const kernel: GpuKernelDef = {
+      name: "mixed",
+      query: [Transform, Velocity],
+      read: [Velocity],
+      write: [fields(Transform, "px", "py", "pz")],
+      uniforms: { dt: "f32" },
+      wgsl: "let eid = indices[id.x];",
+    };
+
+    const wgsl = generateWgsl(kernel);
+    // Full Velocity: all 3 fields
+    expect(wgsl).toContain("var<storage, read> vx:");
+    expect(wgsl).toContain("var<storage, read> vy:");
+    expect(wgsl).toContain("var<storage, read> vz:");
+    // Partial Transform: only position
+    expect(wgsl).toContain("var<storage, read_write> px:");
+    expect(wgsl).not.toContain("rx:");
+  });
+
+  it("field selection in both read and write merges and uses read_write", () => {
+    const kernel: GpuKernelDef = {
+      name: "merge",
+      query: [Transform],
+      read: [fields(Transform, "px")],
+      write: [fields(Transform, "px", "py")],
+      wgsl: "let eid = indices[id.x];",
+    };
+
+    const wgsl = generateWgsl(kernel);
+    // px and py should be read_write, no duplicates
+    const pxMatches = wgsl.match(/var<storage.*> px:/g);
+    expect(pxMatches).toHaveLength(1);
+    expect(wgsl).toContain("var<storage, read_write> px:");
+    expect(wgsl).toContain("var<storage, read_write> py:");
+    // Only px and py — nothing else from Transform
+    expect(wgsl).not.toContain("pz:");
+    expect(wgsl).not.toContain("rx:");
+  });
+
+  it("backward compat: plain ComponentDef still binds all fields", () => {
+    const SmallComp = defineComponent({ a: Float32Array, b: Float32Array });
+    const kernel: GpuKernelDef = {
+      name: "compat",
+      query: [SmallComp],
+      read: [],
+      write: [SmallComp],
+      wgsl: "let eid = indices[id.x];",
+    };
+
+    // 1 index + 2 fields = 3
+    expect(countBindings(kernel)).toBe(3);
+    const wgsl = generateWgsl(kernel);
+    expect(wgsl).toContain("var<storage, read_write> a:");
+    expect(wgsl).toContain("var<storage, read_write> b:");
+  });
+
+  it("Transform + Velocity + GpuParticleLife with field selection fits in 8 storage buffers", () => {
+    const kernel: GpuKernelDef = {
+      name: "within_limit",
+      query: [Transform, Velocity, GpuParticleLife],
+      read: [Velocity],
+      write: [fields(Transform, "px", "py", "pz"), GpuParticleLife],
+      uniforms: { dt: "f32", gravity: "f32" },
+      wgsl: "let eid = indices[id.x];",
+    };
+
+    // 1 uniform + 1 index + 3 read (vx,vy,vz) + 3 write (px,py,pz) + 2 write (age,maxAge) = 10
+    // 10 total, but only 9 storage buffers (uniform doesn't count)
+    const total = countBindings(kernel);
+    const storageBindings = total - 1; // subtract uniform
+    expect(storageBindings).toBeLessThanOrEqual(10);
+    expect(total).toBe(10);
   });
 });

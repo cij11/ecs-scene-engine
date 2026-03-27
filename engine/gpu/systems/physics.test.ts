@@ -67,8 +67,8 @@ describe("physics WGSL shaders", () => {
 });
 
 describe("physics constants", () => {
-  it("GRID_SIZE is 64", () => {
-    expect(GRID_SIZE).toBe(64);
+  it("GRID_SIZE is 32", () => {
+    expect(GRID_SIZE).toBe(32);
   });
 
   it("MAX_PER_CELL is 4", () => {
@@ -76,6 +76,6 @@ describe("physics constants", () => {
   });
 
   it("TOTAL_CELLS is GRID_SIZE^3", () => {
-    expect(TOTAL_CELLS).toBe(64 * 64 * 64);
+    expect(TOTAL_CELLS).toBe(32 * 32 * 32);
   });
 });

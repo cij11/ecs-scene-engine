@@ -738,19 +738,16 @@ export class Service {
     const slug = ticket.name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
     const storyFile = `${storyDir}/${slug}.stories.ts`;
 
+    const isSubtask = ticket.parentName !== null;
+    const title = ticket.parentName
+      ? `Tickets/${ticket.parentName}/${ticket.name} ${ticket.title}`
+      : `Tickets/${ticket.name} ${ticket.title}`;
+
     if (!fs.existsSync(storyFile)) {
-      const isSubtask = ticket.parentName !== null;
       const relPrefix = isSubtask ? "../../.." : "../..";
       const ticketsDir = "process/agile/tickets";
       const relPath = `${relPrefix}/${ticketsDir}/${ticketFilename}`;
       const sharedPath = isSubtask ? "../../_shared" : "../_shared";
-
-      let title: string;
-      if (ticket.parentName) {
-        title = `Tickets/${ticket.parentName}/${ticket.name} ${ticket.title}`;
-      } else {
-        title = `Tickets/${ticket.name} ${ticket.title}`;
-      }
 
       const content = `import ticket from "${relPath}";
 import { renderTicket } from "${sharedPath}/ticket-renderer.js";
@@ -763,6 +760,25 @@ export default {
 export const Ticket = {};
 `;
       fs.writeFileSync(storyFile, content, "utf-8");
+    }
+
+    // Demo story stub
+    const demoFile = `${storyDir}/demo.stories.ts`;
+    if (!fs.existsSync(demoFile)) {
+      const demoContent = `export default {
+  title: "${title}/Demo",
+};
+
+export const Demo = {
+  render: () => {
+    const el = document.createElement("div");
+    el.style.cssText = "font-family: monospace; color: #888; padding: 24px;";
+    el.textContent = "Demo not yet implemented for: ${ticket.name}";
+    return el;
+  },
+};
+`;
+      fs.writeFileSync(demoFile, demoContent, "utf-8");
     }
   }
 

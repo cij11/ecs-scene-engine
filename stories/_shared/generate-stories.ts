@@ -33,7 +33,6 @@ function storyTitle(ticket: TicketJson): string {
 }
 
 function generateStoryFile(ticket: TicketJson, ticketFilename: string): string {
-  // Compute relative path depth based on nesting
   const isSubtask = ticket.parentName !== null;
   const relPrefix = isSubtask ? "../../.." : "../..";
   const relPath = `${relPrefix}/${TICKETS_DIR}/${ticketFilename}`;
@@ -50,6 +49,32 @@ export default {
 };
 
 export const Ticket = {};
+`;
+}
+
+function generateDemoStoryFile(ticket: TicketJson): string {
+  const title = storyTitle(ticket);
+
+  return `export default {
+  title: "${title}/Demo",
+};
+
+/**
+ * Demo story stub. Replace this with the actual demo implementation.
+ *
+ * For browser-rendered demos, export a story that creates DOM elements:
+ *   export const Demo = { render: () => { const el = document.createElement('div'); ... return el; } };
+ *
+ * For canvas/WebGL demos, create and return a canvas element.
+ */
+export const Demo = {
+  render: () => {
+    const el = document.createElement("div");
+    el.style.cssText = "font-family: monospace; color: #888; padding: 24px;";
+    el.textContent = "Demo not yet implemented for: ${ticket.name}";
+    return el;
+  },
+};
 `;
 }
 
@@ -81,19 +106,27 @@ function main() {
 
     const storyFile = path.join(storyDir, `${slugify(data.name)}.stories.ts`);
 
-    // Skip if story already exists
-    if (fs.existsSync(storyFile)) {
+    fs.mkdirSync(storyDir, { recursive: true });
+
+    // Ticket story
+    if (!fs.existsSync(storyFile)) {
+      fs.writeFileSync(storyFile, generateStoryFile(data, file), "utf-8");
+      created++;
+      console.log(`  Created: ${storyFile}`);
+    } else {
       skipped++;
-      continue;
     }
 
-    fs.mkdirSync(storyDir, { recursive: true });
-    fs.writeFileSync(storyFile, generateStoryFile(data, file), "utf-8");
-    created++;
-    console.log(`  Created: ${storyFile}`);
+    // Demo story stub (never overwrite — may have been implemented)
+    const demoFile = path.join(storyDir, "demo.stories.ts");
+    if (!fs.existsSync(demoFile)) {
+      fs.writeFileSync(demoFile, generateDemoStoryFile(data), "utf-8");
+      created++;
+      console.log(`  Created: ${demoFile}`);
+    }
   }
 
-  console.log(`\nDone. Created ${created} stories, skipped ${skipped} existing.`);
+  console.log(`\nDone. Created ${created} stories/demos, skipped ${skipped} existing.`);
 }
 
 main();

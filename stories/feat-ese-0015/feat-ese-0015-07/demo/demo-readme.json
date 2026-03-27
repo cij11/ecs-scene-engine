@@ -1,0 +1,7 @@
+{
+  "command": "npx tsx tooling/capture-page.ts nested-view.html",
+  "artifactType": "video",
+  "artifacts": [
+    "nested-view-screenshot.png"
+  ]
+}

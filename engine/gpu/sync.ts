@@ -19,7 +19,7 @@ import {
   registerWriteClaim,
 } from "./context.js";
 import type { GpuKernelDef } from "./kernel.js";
-import { generateWgsl } from "./kernel.js";
+import { generateWgsl, getComponentDef, getFieldNames } from "./kernel.js";
 import { GPU_BUFFER_USAGE } from "./types.js";
 import { bufferKey } from "./types.js";
 
@@ -33,15 +33,16 @@ import { bufferKey } from "./types.js";
  * AND are marked dirty.
  */
 export function uploadBuffers(gpu: GpuContext, world: World, kernel: GpuKernelDef): void {
-  const allComponents = [...kernel.read, ...kernel.write];
+  const allEntries = [...kernel.read, ...kernel.write];
   const seen = new Set<number>();
 
-  for (const comp of allComponents) {
+  for (const entry of allEntries) {
+    const comp = getComponentDef(entry);
     if (seen.has(comp.id)) continue;
     seen.add(comp.id);
 
     // Ensure buffers exist at correct size
-    const isWritable = kernel.write.some((w) => w.id === comp.id);
+    const isWritable = kernel.write.some((w) => getComponentDef(w).id === comp.id);
     ensureComponentBuffers(gpu, comp, world.components, isWritable);
 
     // Only upload if dirty
@@ -50,7 +51,8 @@ export function uploadBuffers(gpu: GpuContext, world: World, kernel: GpuKernelDe
     const store = getStore(world, comp);
     if (!store) continue;
 
-    for (const field in comp.schema) {
+    // Upload only the selected fields (or all if full component)
+    for (const field of getFieldNames(entry)) {
       const cpuArray = store[field]!;
       const gpuBuf = gpu.buffers.get(bufferKey(comp.id, field));
       if (gpuBuf) {
@@ -60,8 +62,8 @@ export function uploadBuffers(gpu: GpuContext, world: World, kernel: GpuKernelDe
   }
 
   // Clear dirty flags for uploaded components
-  for (const comp of allComponents) {
-    gpu.cpuDirty.delete(comp.id);
+  for (const entry of allEntries) {
+    gpu.cpuDirty.delete(getComponentDef(entry).id);
   }
 }
 
@@ -121,11 +123,20 @@ function createBindGroup(
 
   // Component field buffers (deduplicated, same order as generateWgsl)
   const emitted = new Set<number>();
-  for (const comp of [...compiled.kernel.read, ...compiled.kernel.write]) {
+  for (const entry of [...compiled.kernel.read, ...compiled.kernel.write]) {
+    const comp = getComponentDef(entry);
     if (emitted.has(comp.id)) continue;
     emitted.add(comp.id);
 
-    for (const field in comp.schema) {
+    // Merge fields from all entries for this component
+    const entryFields = new Set<string>();
+    for (const e of [...compiled.kernel.read, ...compiled.kernel.write]) {
+      if (getComponentDef(e).id === comp.id) {
+        for (const f of getFieldNames(e)) entryFields.add(f);
+      }
+    }
+
+    for (const field of entryFields) {
       const buf = gpu.buffers.get(bufferKey(comp.id, field));
       if (!buf) {
         throw new Error(`Missing GPU buffer for component ${comp.id} field "${field}"`);
@@ -196,8 +207,8 @@ export function dispatchKernel(
   gpu.queue.submit([encoder.finish()]);
 
   // Mark written components as GPU-dirty
-  for (const comp of compiled.kernel.write) {
-    markGpuDirty(gpu, comp.id);
+  for (const entry of compiled.kernel.write) {
+    markGpuDirty(gpu, getComponentDef(entry).id);
   }
 }
 
@@ -284,14 +295,14 @@ export function createGpuSystem(
 
   // Register write claims for authority guards
   if (authorityTag) {
-    for (const comp of kernel.write) {
-      registerWriteClaim(gpu, comp, authorityTag, kernel.name);
+    for (const entry of kernel.write) {
+      registerWriteClaim(gpu, getComponentDef(entry), authorityTag, kernel.name);
     }
   }
 
   // Mark all CPU-written components as initially dirty
-  for (const comp of [...kernel.read, ...kernel.write]) {
-    markCpuDirty(gpu, comp.id);
+  for (const entry of [...kernel.read, ...kernel.write]) {
+    markCpuDirty(gpu, getComponentDef(entry).id);
   }
 
   // Compile pipeline

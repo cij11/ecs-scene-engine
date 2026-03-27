@@ -15,7 +15,7 @@
 // WGSL sources for each pass
 // ---------------------------------------------------------------------------
 
-export const GRID_SIZE = 64; // cells per axis
+export const GRID_SIZE = 32; // cells per axis (was 64 — 32³ = 32K cells vs 262K)
 export const MAX_PER_CELL = 4; // max entities per grid cell
 const TOTAL_CELLS = GRID_SIZE * GRID_SIZE * GRID_SIZE;
 
@@ -208,13 +208,18 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
   fy[eid] = 0.0;
   fz[eid] = 0.0;
 
+  // Velocity damping — removes energy so bodies settle
+  vx[eid] = vx[eid] * 0.998;
+  vy[eid] = vy[eid] * 0.998;
+  vz[eid] = vz[eid] * 0.998;
+
   // Integrate position
   px[eid] = px[eid] + vx[eid] * params.dt;
   py[eid] = py[eid] + vy[eid] * params.dt;
   pz[eid] = pz[eid] + vz[eid] * params.dt;
 
   // Bounce off bounds (box constraint)
-  let dampening = 0.7;
+  let dampening = 0.5;
   if (py[eid] < params.boundsMin) {
     py[eid] = params.boundsMin;
     vy[eid] = abs(vy[eid]) * dampening;

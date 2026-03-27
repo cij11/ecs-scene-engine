@@ -10,10 +10,15 @@
 import { createWorld, addEntity, addComponent, getStore, query } from "../engine/ecs/world.js";
 import { queryEntities } from "../engine/ecs/query.js";
 import { Velocity } from "../engine/ecs/components/velocity.js";
-import { GpuPosition } from "../engine/gpu/components/position.js";
 import { GpuParticleTag, GpuParticleLife } from "../engine/gpu/components/particle.js";
+import { GpuPosition } from "../engine/gpu/components/position.js";
 import { gpuParticleIntegrateKernel } from "../engine/gpu/systems/particle.js";
-import { generateWgsl, countBindings } from "../engine/gpu/kernel.js";
+import {
+  generateWgsl,
+  countBindings,
+  getComponentDef,
+  getFieldNames,
+} from "../engine/gpu/kernel.js";
 
 const log = document.getElementById("log")!;
 
@@ -126,11 +131,12 @@ async function main() {
   };
   const fieldBuffers: FieldBuf[] = [];
 
-  const allComps = [...gpuParticleIntegrateKernel.read, ...gpuParticleIntegrateKernel.write];
+  const allEntries = [...gpuParticleIntegrateKernel.read, ...gpuParticleIntegrateKernel.write];
   const emitted = new Set<number>();
-  const writeIds = new Set(gpuParticleIntegrateKernel.write.map((c) => c.id));
+  const writeIds = new Set(gpuParticleIntegrateKernel.write.map((e) => getComponentDef(e).id));
 
-  for (const comp of allComps) {
+  for (const entry of allEntries) {
+    const comp = getComponentDef(entry);
     if (emitted.has(comp.id)) continue;
     emitted.add(comp.id);
 
@@ -139,7 +145,15 @@ async function main() {
     const baseUsage = GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST;
     const usage = isWritable ? baseUsage | GPUBufferUsage.COPY_SRC : baseUsage;
 
-    for (const field in comp.schema) {
+    // Merge fields from all entries for this component
+    const selectedFields = new Set<string>();
+    for (const e of allEntries) {
+      if (getComponentDef(e).id === comp.id) {
+        for (const f of getFieldNames(e)) selectedFields.add(f);
+      }
+    }
+
+    for (const field of selectedFields) {
       const cpuArray = store[field]! as Float32Array;
       const gpuBuf = device.createBuffer({
         size: cpuArray.byteLength,

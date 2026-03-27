@@ -14,15 +14,45 @@ import { typedArrayToWgsl } from "./types.js";
 // Kernel definition
 // ---------------------------------------------------------------------------
 
+/**
+ * Field selection — bind only specific fields of a component.
+ * Use the `fields()` helper to create one.
+ */
+export interface FieldSelection {
+  component: ComponentDef;
+  fields: string[];
+}
+
+/** Select specific fields from a component for GPU binding. */
+export function fields(component: ComponentDef, ...fieldNames: string[]): FieldSelection {
+  return { component, fields: fieldNames };
+}
+
+/** A binding entry is either a full component or a field selection. */
+export type BindingEntry = ComponentDef | FieldSelection;
+
+export function isFieldSelection(entry: BindingEntry): entry is FieldSelection {
+  return "fields" in entry && "component" in entry;
+}
+
+export function getComponentDef(entry: BindingEntry): ComponentDef {
+  return isFieldSelection(entry) ? entry.component : entry;
+}
+
+export function getFieldNames(entry: BindingEntry): string[] {
+  if (isFieldSelection(entry)) return entry.fields;
+  return Object.keys(entry.schema);
+}
+
 export interface GpuKernelDef {
   /** Unique name for this kernel (used for pipeline caching) */
   name: string;
   /** Which entities to process — provides dispatch indices */
   query: QueryTerm[];
-  /** Components bound as read-only storage */
-  read: ComponentDef[];
-  /** Components bound as read-write storage */
-  write: ComponentDef[];
+  /** Components bound as read-only storage. Use fields() for subset binding. */
+  read: BindingEntry[];
+  /** Components bound as read-write storage. Use fields() for subset binding. */
+  write: BindingEntry[];
   /** Uniform values passed each frame */
   uniforms?: Record<string, WgslType>;
   /** Workgroup size (default 64) */
@@ -35,37 +65,72 @@ export interface GpuKernelDef {
 // WGSL code generation
 // ---------------------------------------------------------------------------
 
+/** Resolved binding: component + selected fields for code generation. */
+interface ResolvedBinding {
+  compId: number;
+  comp: ComponentDef;
+  fieldNames: string[];
+  access: "read" | "read_write";
+}
+
 /**
- * Detect field name collisions across components and return a
- * mapping from (componentId, fieldName) → WGSL variable name.
- * Only namespaces when a collision exists.
+ * Resolve all binding entries into a flat list of (comp, fields, access),
+ * deduplicating components (write wins over read).
  */
-function resolveFieldNames(components: ComponentDef[]): Map<string, string> {
-  // Deduplicate components first (same component in read+write)
-  const seen = new Set<number>();
-  const unique: ComponentDef[] = [];
-  for (const comp of components) {
-    if (!seen.has(comp.id)) {
-      seen.add(comp.id);
-      unique.push(comp);
+function resolveBindings(kernel: GpuKernelDef): ResolvedBinding[] {
+  const writeIds = new Set(kernel.write.map((e) => getComponentDef(e).id));
+
+  // Collect all entries, tracking fields per component
+  const fieldsByComp = new Map<
+    number,
+    { comp: ComponentDef; fields: Set<string>; access: "read" | "read_write" }
+  >();
+
+  for (const entry of [...kernel.read, ...kernel.write]) {
+    const comp = getComponentDef(entry);
+    const entryFields = getFieldNames(entry);
+    const existing = fieldsByComp.get(comp.id);
+
+    if (existing) {
+      // Merge fields
+      for (const f of entryFields) existing.fields.add(f);
+      // Write wins
+      if (writeIds.has(comp.id)) existing.access = "read_write";
+    } else {
+      fieldsByComp.set(comp.id, {
+        comp,
+        fields: new Set(entryFields),
+        access: writeIds.has(comp.id) ? "read_write" : "read",
+      });
     }
   }
 
-  // Count occurrences of each field name across unique components
+  return Array.from(fieldsByComp.values()).map((v) => ({
+    compId: v.comp.id,
+    comp: v.comp,
+    fieldNames: Array.from(v.fields),
+    access: v.access,
+  }));
+}
+
+/**
+ * Detect field name collisions and return a mapping
+ * from (componentId, fieldName) → WGSL variable name.
+ */
+function resolveFieldNames(bindings: ResolvedBinding[]): Map<string, string> {
   const counts = new Map<string, number>();
-  for (const comp of unique) {
-    for (const field in comp.schema) {
+  for (const b of bindings) {
+    for (const field of b.fieldNames) {
       counts.set(field, (counts.get(field) ?? 0) + 1);
     }
   }
 
   const result = new Map<string, string>();
-  for (const comp of components) {
-    for (const field in comp.schema) {
-      const key = `${comp.id}:${field}`;
+  for (const b of bindings) {
+    for (const field of b.fieldNames) {
+      const key = `${b.compId}:${field}`;
       if (counts.get(field)! > 1) {
-        // Collision — namespace with component id
-        result.set(key, `c${comp.id}_${field}`);
+        result.set(key, `c${b.compId}_${field}`);
       } else {
         result.set(key, field);
       }
@@ -98,29 +163,19 @@ export function generateWgsl(kernel: GpuKernelDef): string {
   lines.push(`@group(0) @binding(${binding}) var<storage, read> indices: array<u32>;`);
   binding++;
 
-  // --- Resolve field names across all components ---
-  const allComponents = [...kernel.read, ...kernel.write];
-  const writeIds = new Set(kernel.write.map((c) => c.id));
-  const nameMap = resolveFieldNames(allComponents);
+  // --- Resolve bindings and field names ---
+  const bindings = resolveBindings(kernel);
+  const nameMap = resolveFieldNames(bindings);
 
   // --- Component field bindings ---
-  // Track which components we've already emitted (avoid duplicates if
-  // a component appears in both read and write)
-  const emitted = new Set<number>();
-
-  for (const comp of allComponents) {
-    if (emitted.has(comp.id)) continue;
-    emitted.add(comp.id);
-
-    const access = writeIds.has(comp.id) ? "read_write" : "read";
-
-    for (const field in comp.schema) {
-      const key = `${comp.id}:${field}`;
+  for (const b of bindings) {
+    for (const field of b.fieldNames) {
+      const key = `${b.compId}:${field}`;
       const varName = nameMap.get(key)!;
-      const wgslType = typedArrayToWgsl(comp.schema[field]!);
+      const wgslType = typedArrayToWgsl(b.comp.schema[field]!);
 
       lines.push(
-        `@group(0) @binding(${binding}) var<storage, ${access}> ${varName}: array<${wgslType}>;`,
+        `@group(0) @binding(${binding}) var<storage, ${b.access}> ${varName}: array<${wgslType}>;`,
       );
       binding++;
     }
@@ -158,12 +213,10 @@ export function countBindings(kernel: GpuKernelDef): number {
   // Index buffer
   count++;
 
-  // Component fields (deduplicated)
-  const emitted = new Set<number>();
-  for (const comp of [...kernel.read, ...kernel.write]) {
-    if (emitted.has(comp.id)) continue;
-    emitted.add(comp.id);
-    count += Object.keys(comp.schema).length;
+  // Component fields (deduplicated via resolveBindings)
+  const bindings = resolveBindings(kernel);
+  for (const b of bindings) {
+    count += b.fieldNames.length;
   }
 
   return count;

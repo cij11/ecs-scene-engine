@@ -124,15 +124,18 @@ describe("renderFrame", () => {
     expect(setNullIdx).toBeLessThan(secondRenderIdx);
   });
 
-  it("recursive camera renders multiple passes", () => {
-    const cameras: CameraInfo[] = [{ handle: 1, renderTarget: "mirror-view", recursionDepth: 2 }];
+  it("recursive camera renders multiple passes via ping-pong", () => {
+    const cameras: CameraInfo[] = [
+      { handle: 1, renderTarget: "mirror-view", recursionDepth: 3 },
+      { handle: 2, renderTarget: "browser", recursionDepth: 0 },
+    ];
     const quads: QuadInfo[] = [{ handle: 10, renderTarget: "mirror-view" }];
 
     renderFrame(tracking.renderer, cameras, quads);
 
-    // 2 recursive passes + 1 final pass = 3 renders
+    // 3 ping-pong passes for the cyclic camera + 1 browser render = 4
     const renders = tracking.calls.filter((c) => c.method === "render");
-    expect(renders).toHaveLength(3);
+    expect(renders).toHaveLength(4);
   });
 
   it("resets viewport at the end", () => {

@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { resetComponentIdCounter } from "../../ecs/component.js";
+import { Transform } from "../../ecs/components/transform.js";
 import { Velocity } from "../../ecs/components/velocity.js";
-import { GpuPosition } from "../components/position.js";
 import { GpuParticleTag, GpuParticleLife } from "../components/particle.js";
 import { gpuParticleIntegrateKernel } from "./particle.js";
-import { generateWgsl, countBindings } from "../kernel.js";
+import { generateWgsl, countBindings, getComponentDef } from "../kernel.js";
 
 beforeEach(() => {
   resetComponentIdCounter();
@@ -25,9 +25,9 @@ describe("particle components", () => {
 });
 
 describe("gpuParticleIntegrateKernel", () => {
-  it("queries GpuParticleTag, GpuPosition, Velocity, GpuParticleLife", () => {
+  it("queries GpuParticleTag, Transform, Velocity, GpuParticleLife", () => {
     expect(gpuParticleIntegrateKernel.query).toContain(GpuParticleTag);
-    expect(gpuParticleIntegrateKernel.query).toContain(GpuPosition);
+    expect(gpuParticleIntegrateKernel.query).toContain(Transform);
     expect(gpuParticleIntegrateKernel.query).toContain(Velocity);
     expect(gpuParticleIntegrateKernel.query).toContain(GpuParticleLife);
   });
@@ -37,9 +37,10 @@ describe("gpuParticleIntegrateKernel", () => {
     expect(gpuParticleIntegrateKernel.read).not.toContain(GpuParticleLife);
   });
 
-  it("writes GpuPosition and GpuParticleLife", () => {
-    expect(gpuParticleIntegrateKernel.write).toContain(GpuPosition);
-    expect(gpuParticleIntegrateKernel.write).toContain(GpuParticleLife);
+  it("writes Transform (position fields) and GpuParticleLife", () => {
+    const writeComps = gpuParticleIntegrateKernel.write.map((e) => getComponentDef(e));
+    expect(writeComps).toContain(Transform);
+    expect(writeComps).toContain(GpuParticleLife);
   });
 
   it("has dt and gravity uniforms", () => {

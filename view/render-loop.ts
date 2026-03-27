@@ -74,42 +74,63 @@ export function renderFrame(renderer: Renderer, cameras: CameraInfo[], quads: Qu
 
     const isBrowser = cam.renderTarget === "browser";
 
-    if (cyclicIds.has(entry.id) && cam.recursionDepth > 0) {
-      // Iterative passes for recursive cameras
-      for (let pass = 0; pass < cam.recursionDepth; pass++) {
-        if (!isBrowser) {
-          renderer.setRenderTarget(cam.renderTarget);
-        }
+    if (cyclicIds.has(entry.id) && cam.recursionDepth > 0 && !isBrowser) {
+      // Ping-pong rendering for recursive cameras.
+      // Use two targets to avoid feedback loop: render to A while reading B, then swap.
+      const pingTarget = cam.renderTarget;
+      const pongTarget = cam.renderTarget + "__pong";
+
+      // Ensure pong target exists
+      renderer.createRenderTarget(pongTarget, 512, 512);
+
+      // Pass 0: unbind quad, render to ping (quad shows nothing)
+      unbindQuadTextures(renderer, pingTarget, quadsByTarget);
+      renderer.setRenderTarget(pingTarget);
+      renderer.setActiveCamera(cam.handle);
+      renderer.render();
+      renderer.setRenderTarget(null);
+
+      for (let pass = 1; pass < cam.recursionDepth; pass++) {
+        const readFrom = pass % 2 === 1 ? pingTarget : pongTarget;
+        const writeTo = pass % 2 === 1 ? pongTarget : pingTarget;
+
+        // Bind previous pass result to quad (look up by original target, bind to readFrom texture)
+        bindQuadTextures(renderer, pingTarget, quadsByTarget, readFrom);
+
+        // Render to the other target
+        renderer.setRenderTarget(writeTo);
         renderer.setActiveCamera(cam.handle);
         renderer.render();
+        renderer.setRenderTarget(null);
+      }
 
-        // Bind this camera's texture to quads displaying it
-        bindQuadTextures(renderer, cam.renderTarget, quadsByTarget);
+      // Bind the final result to the quad
+      const finalTarget = cam.recursionDepth % 2 === 1 ? pingTarget : pongTarget;
+      bindQuadTextures(renderer, pingTarget, quadsByTarget, finalTarget);
 
-        if (!isBrowser) {
-          renderer.setRenderTarget(null);
-        }
+      // Clean up pong target
+      renderer.destroyRenderTarget(pongTarget);
+    } else {
+      // Non-cyclic camera: unbind, render, rebind
+      if (!isBrowser) {
+        unbindQuadTextures(renderer, cam.renderTarget, quadsByTarget);
       }
     }
 
-    // Unbind textures from quads that display this camera's target
-    // to prevent feedback loop (reading and writing same texture)
-    if (!isBrowser) {
-      unbindQuadTextures(renderer, cam.renderTarget, quadsByTarget);
-    }
-
-    // Final pass (or only pass for non-cyclic cameras)
-    if (!isBrowser) {
+    // Final pass to actual target (or only pass for non-cyclic)
+    if (!isBrowser && !cyclicIds.has(entry.id)) {
       renderer.setRenderTarget(cam.renderTarget);
-    } else {
+    } else if (isBrowser) {
       renderer.setRenderTarget(null);
     }
 
-    renderer.setActiveCamera(cam.handle);
-    renderer.render();
+    if (!cyclicIds.has(entry.id) || isBrowser) {
+      renderer.setActiveCamera(cam.handle);
+      renderer.render();
+    }
 
-    // Rebind textures after rendering
-    if (!isBrowser) {
+    // Rebind textures after non-cyclic rendering
+    if (!isBrowser && !cyclicIds.has(entry.id)) {
       renderer.setRenderTarget(null);
       bindQuadTextures(renderer, cam.renderTarget, quadsByTarget);
     }
@@ -134,10 +155,11 @@ function bindQuadTextures(
   renderer: Renderer,
   renderTarget: string,
   quadsByTarget: Map<string, QuadInfo[]>,
+  overrideTextureId?: string,
 ): void {
   const targetQuads = quadsByTarget.get(renderTarget);
   if (!targetQuads) return;
   for (const quad of targetQuads) {
-    renderer.setMaterialTexture(quad.handle, renderTarget);
+    renderer.setMaterialTexture(quad.handle, overrideTextureId ?? renderTarget);
   }
 }
