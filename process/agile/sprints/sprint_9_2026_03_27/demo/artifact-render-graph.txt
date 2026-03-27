@@ -1,0 +1,17 @@
+
+ RUN  v4.1.1 /Users/chrisjolly/Projects/ecs-scene-engine
+
+ ✓ view/render-graph.test.ts > buildRenderOrder > two independent cameras — no dependencies 5ms
+ ✓ view/render-graph.test.ts > buildRenderOrder > split screen — cameras rendering to browser have no dependency 1ms
+ ✓ view/render-graph.test.ts > buildRenderOrder > TV in scene — inner camera renders before outer 1ms
+ ✓ view/render-graph.test.ts > buildRenderOrder > two texture cameras — both render before browser camera 1ms
+ ✓ view/render-graph.test.ts > buildRenderOrder > hall of mirrors — recursionDepth marks cycle 1ms
+ ✓ view/render-graph.test.ts > buildRenderOrder > mixed — independent and dependent cameras 1ms
+ ✓ view/render-graph.test.ts > buildRenderOrder > recursionDepth > 0 marks camera as cyclic 1ms
+ ✓ view/render-graph.test.ts > buildRenderOrder > recursionDepth 0 is not cyclic even if target on a quad 0ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  00:11:50
+   Duration  324ms (transform 45ms, setup 0ms, import 71ms, tests 13ms, environment 0ms)
+

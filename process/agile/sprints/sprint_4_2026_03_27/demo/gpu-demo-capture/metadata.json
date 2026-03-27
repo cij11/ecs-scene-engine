@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-03-27T11:36:37.772Z",
+  "duration": 1,
+  "fps": 1,
+  "totalFrames": 1,
+  "width": 1200,
+  "height": 900,
+  "url": "http://localhost:4000/gpu-demo.html",
+  "sampleRate": 5,
+  "sampledFrames": 1
+}

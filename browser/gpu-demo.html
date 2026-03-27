@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GPU Compute Demo — Particle System</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #111;
+        color: #eee;
+        font-family: monospace;
+        padding: 20px;
+      }
+      #log {
+        white-space: pre-wrap;
+        font-size: 13px;
+        line-height: 1.5;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      .header {
+        color: #4fc3f7;
+        font-weight: bold;
+      }
+      .pass {
+        color: #66bb6a;
+      }
+      .fail {
+        color: #ef5350;
+      }
+      .dim {
+        color: #888;
+      }
+      .perf {
+        color: #ffa726;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="log"></div>
+    <script type="module" src="./gpu-demo.ts"></script>
+  </body>
+</html>

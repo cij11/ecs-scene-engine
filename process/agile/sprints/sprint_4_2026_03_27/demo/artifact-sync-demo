@@ -1,0 +1,27 @@
+=== feat-ESE-0012-04: Buffer Sync Demo ===
+
+1. Created 100 entities with Transform + Velocity + GpuRigidBody + GpuForce + GpuTeleport
+2. CPU applied GpuForce(10,0,0) to first 10 entities
+3. CPU set GpuTeleport(50,50,50,active=1) on entity 0
+
+4. Created GPU physics system
+   Write claims: Transform → gpuPhysics, Velocity → gpuPhysics
+   Components marked cpu-dirty: {3, 4, 0, 1}
+
+5. Dispatched GPU physics system (dt=0.016)
+   Buffers in pool: 14
+   GPU-dirty components: {0, 1} (Transform, Velocity written by GPU)
+   CPU-dirty components: {} (cleared after upload)
+
+6. Simulated post-readback results (CPU reference of GPU kernel logic):
+   Entity 0 (teleported): px=50, py=50, pz=50
+   Entity 1 (forced):     px=1.0042, vx=0.2600 (accelerated by force)
+   Entity 50 (no force):  px=50.0016, vx=0.1000 (unchanged velocity)
+   GpuForce zeroed: fx[0]=0, fx[1]=0
+   GpuTeleport cleared: active[0]=0
+
+7. Authority guard test:
+   ✓ CPU write to Transform on GpuRigidBody entity blocked
+   ✓ CPU write to Transform on non-GpuRigidBody entity allowed
+
+=== Demo complete ===

@@ -1,20 +1,12 @@
 {
-  "overallInterpretation": "The demo presents a comprehensive GPU compute architecture document for an ECS engine, covering data flow (CPU-to-GPU upload, GPU dispatch, GPU-to-CPU readback), a detailed component authority model (physics authority with intent components, authority guards, authority categories), and numerous design decisions (lazy buffer creation, grid-based vs sort-based broadphase, pipeline phase integration, WGSL codegen strategy). Two supporting artifacts demonstrate working GpuContext lifecycle (buffer pool, dirty tracking, authority guards) and WGSL code generation for three kernels (movement, particle, physics). Together these artifacts constitute an architecture document walkthrough with data flow, authority model, and design decisions.",
+  "overallInterpretation": "The artifact demonstrates the buffer sync pipeline for 100 entities with the required components. CPU-side intent application (GpuForce on 10 entities, GpuTeleport on 1 entity), buffer pool creation, dirty-flag tracking, and authority guards are all shown. However, the post-readback results are explicitly labeled as 'Simulated post-readback results (CPU reference of GPU kernel logic)', meaning no actual GPU kernel executed. The physics integration was computed on the CPU as a reference implementation of what the GPU kernel would do, rather than dispatching a real GPU compute shader and reading back results. The authority guard (CPU write to Transform on a GpuRigidBody entity blocked) is demonstrated.",
   "artifacts": [
     {
-      "file": "artifact-arch-walkthrough",
-      "interpretation": "A full architecture document covering: (1) data flow between CPU SoA TypedArrays and GPU storage buffers via upload/dispatch/readback, (2) pipeline phase integration showing where GPU systems slot into preUpdate/update/postUpdate, (3) GpuContext interface and lifecycle with lazy buffer creation, (4) GpuKernelDef DSL for defining compute kernels, (5) WGSL code generation from kernel definitions, (6) component authority model detailing physics authority with intent components (GpuForce, GpuImpulse, GpuTeleport), authority categories by entity type, and dev-mode authority guards, (7) multi-pass dispatch for physics, (8) edge cases (no WebGPU, buffer resize, entity destruction, f64 downcast), and (9) file structure. Design decisions are documented with rationale and rejected alternatives citing reference implementations (TypeGPU, bevy_hanabi, bevy_gpu_compute, GPU Gems, Unity GPU Physics, Godot, Bevy+Rapier)."
-    },
-    {
-      "file": "artifact-context-demo",
-      "interpretation": "Terminal output demonstrating GpuContext functionality: creating a context with a mocked WebGPU device, registering 3 components producing 8 buffers in the pool, buffer growth when adding 1000 entities, dirty tracking (cpuDirty/gpuDirty sets), GPU-authoritative component configuration, write claim registration with authority guard enforcement (correctly throwing on violation, allowing non-guarded writes), and clean context destruction."
-    },
-    {
-      "file": "artifact-kernel-demo",
-      "interpretation": "Terminal output showing WGSL code generation for three kernels: (1) a movement kernel with 8 bindings reading Velocity and writing Transform, (2) a particle integration kernel with 14 bindings including age/color fade, and (3) a physics integration kernel with 20 bindings handling teleport, force, impulse, and position integration. All three kernels generated successfully, demonstrating the codegen pipeline produces valid WGSL with correct binding layouts, storage access modes, and dispatch guards."
+      "file": "artifact-sync-demo",
+      "interpretation": "Text log of a buffer sync demo. Shows: (1) 100 entities created with Transform, Velocity, GpuRigidBody, GpuForce, GpuTeleport. (2) CPU applies GpuForce to 10 entities and GpuTeleport to 1 entity. (3) GPU physics system created with write claims on Transform and Velocity; dirty flags tracked and cleared. (4) Post-readback results are SIMULATED on CPU, not from an actual GPU kernel -- teleported entity at correct position, forced entity accelerated, GpuForce zeroed, GpuTeleport cleared. (5) Authority guard confirmed: CPU write to Transform blocked on GpuRigidBody entity, allowed on non-GpuRigidBody entity."
     }
   ],
-  "demoMatchesExpected": true,
-  "allQuestionsAnswered": true,
+  "demoMatchesExpected": false,
+  "allQuestionsAnswered": false,
   "validatedBy": "context-free-validation-agent"
 }

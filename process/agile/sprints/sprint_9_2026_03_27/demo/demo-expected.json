@@ -1,4 +1,4 @@
 {
-  "description": "Demonstrate renderer RenderTarget and viewport APIs: create a render target, render to it, set viewport region, bind texture to mesh material, and clean up.",
-  "durationMs": 10000
+  "description": "Demonstrate aspect ratio viewport calculations for stretch, letterbox, and truncate modes.",
+  "durationMs": 5000
 }

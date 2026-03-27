@@ -1,9 +1,10 @@
 {
-  "command": "cat engine/gpu/architecture.md",
+  "command": "npx tsx engine/gpu/demo-sync.ts",
   "artifactType": "terminal",
   "artifacts": [
     "artifact-arch-walkthrough",
     "artifact-context-demo",
-    "artifact-kernel-demo"
+    "artifact-kernel-demo",
+    "artifact-sync-demo"
   ]
 }

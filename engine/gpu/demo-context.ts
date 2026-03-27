@@ -10,7 +10,6 @@
 import { defineComponent, defineTag, resetComponentIdCounter } from "../ecs/component.js";
 import { createWorld, addEntity, addComponent } from "../ecs/world.js";
 import {
-  ensureBuffer,
   ensureComponentBuffers,
   getBuffer,
   markCpuDirty,
@@ -20,11 +19,8 @@ import {
   destroyGpuContext,
 } from "./context.js";
 import type { GpuContext } from "./context.js";
-import { GPU_BUFFER_USAGE } from "./types.js";
-
 // --- Mock WebGPU for Node ---
 function createMockGpuContext(): GpuContext {
-  let bufferCount = 0;
   const mockDevice = {
     createBuffer: (desc: { size: number; label?: string }) => ({
       size: desc.size,
