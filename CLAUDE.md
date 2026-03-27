@@ -20,7 +20,7 @@ This project uses a file-based locking system for coordinating work across multi
 npm run agile -- ticket status <ticket> <new_status>
 ```
 
-The legacy `npm run ticket:status` still works (it delegates to the agile service). The service enforces gates (CI, field validation, demo checks) and writes to the audit log. Run `npm run agile -- ticket validate` to check consistency.
+The legacy `npm run ticket:status` still works (it delegates to the agile service). The service enforces exit criteria (CI, field validation, demo checks) and writes to the audit log. Run `npm run agile -- ticket validate` to check consistency.
 
 ## Code Review
 
@@ -31,7 +31,7 @@ The legacy `npm run ticket:status` still works (it delegates to the agile servic
 3. Assess code quality, correctness, and test coverage
 4. Only then write review.md with your findings
 
-review.md must contain an honest assessment. If there are critical or severe issues, they must be listed — do not create a clean review.md to bypass the gate.
+review.md must contain an honest assessment. If there are critical or severe issues, they must be listed — do not create a clean review.md to bypass the exit criteria.
 
 ## Testing Strategy
 
@@ -49,6 +49,8 @@ Visual testing is the primary mechanism for **demo validation**, not dev validat
 See `process/agile/agile.md` for the full process. Key points:
 
 - Tickets follow the status flow defined in agile.md
-- `feat` tickets require a Demo Deliverable and must go through the demo validation process
-- All transitions are gated by the agile service (`npm run agile -- <command>`)
+- All tickets require a Demo Deliverable and go through the demo validation process
+- All transitions are enforced by the agile service exit criteria (`npm run agile -- <command>`)
+- Demo validation must use a context-free agent: `npm run agile -- ticket validate-demo <name>`
+- `ticket accept` requires interactive terminal confirmation (human only)
 - CI must pass before marking tickets done (`npm run ci`)

@@ -1,19 +1,19 @@
+import * as fs from "node:fs";
 import type {
   Ticket,
-  GateResult,
+  ExitCriteriaResult,
   Sprint,
   VelocityEntry,
 } from "./types.js";
 import type { Repository } from "./repository.js";
 import {
-  gateReadyForDev,
-  gateInTesting,
-  gateInReview,
-  gateValidatingDemo,
-  gateDemoValidated,
-  gateHumanDemoValidation,
-  gateDone,
-} from "./gates.js";
+  exitInRefinement,
+  exitInTesting,
+  exitInReview,
+  exitBuildingDemo,
+  exitValidatingDemo,
+  exitDone,
+} from "./exit-criteria.js";
 
 export class Service {
   constructor(
@@ -44,7 +44,7 @@ export class Service {
       name,
       type,
       title,
-      status: "draft",
+      status: "inRefinement",
       description: "",
       acceptanceCriteria: "",
       demoDeliverable: "",
@@ -129,9 +129,9 @@ export class Service {
         );
       }
 
-      const gateResult = this.runGates(newStatus, ticket);
-      if (!gateResult.passed) {
-        throw new GateError(ticket.name, newStatus, gateResult.errors);
+      const exitResult = this.checkExitCriteria(oldStatus, ticket);
+      if (!exitResult.passed) {
+        throw new ExitCriteriaError(ticket.name, newStatus, exitResult.errors);
       }
     }
 
@@ -378,7 +378,7 @@ export class Service {
       }
     }
 
-    // Gate: all tickets must have demoAccepted
+    // Exit criteria: all tickets must have demoAccepted
     for (const ticketName of sprint.ticketNames) {
       const ticket = this.resolveTicketSafe(ticketName);
       if (ticket && !ticket.demoAccepted) {
@@ -388,13 +388,13 @@ export class Service {
       }
     }
 
-    // Gate: must have tickets with points
+    // Exit criteria: must have tickets with points
     if (totalCount === 0) {
       errors.push("No tickets with story points found — velocity cannot be calculated");
     }
 
     if (errors.length > 0) {
-      throw new GateError(sprintName, "complete", errors);
+      throw new ExitCriteriaError(sprintName, "complete", errors);
     }
 
     // Warnings
@@ -511,6 +511,70 @@ export class Service {
     return total;
   }
 
+  generateValidateDemoPrompt(name: string): string {
+    const ticket = this.resolveTicket(name);
+    const sprintDir = this.getSprintDir(ticket);
+    if (!sprintDir) {
+      throw new Error(`Ticket "${name}" is not in a sprint — no demo directory.`);
+    }
+
+    const demoDir = `${sprintDir}/demo`;
+    const expectedPath = `${demoDir}/demo-expected.json`;
+    const readmePath = `${demoDir}/demo-readme.json`;
+
+    if (!fs.existsSync(expectedPath)) {
+      throw new Error("Missing demo-expected.json");
+    }
+    if (!fs.existsSync(readmePath)) {
+      throw new Error("Missing demo-readme.json");
+    }
+
+    const expected = fs.readFileSync(expectedPath, "utf-8");
+    const readme = JSON.parse(fs.readFileSync(readmePath, "utf-8"));
+
+    const artifactContents: { file: string; content: string }[] = [];
+    for (const artifactFile of readme.artifacts ?? []) {
+      const artifactPath = `${demoDir}/${artifactFile}`;
+      if (!fs.existsSync(artifactPath)) {
+        throw new Error(`Missing artifact file: ${artifactFile}`);
+      }
+      artifactContents.push({
+        file: artifactFile,
+        content: fs.readFileSync(artifactPath, "utf-8"),
+      });
+    }
+
+    const actualPath = `${demoDir}/demo-actual.json`;
+
+    let prompt = `You are a demo validation agent. You have NO context about how this software was built.\n\n`;
+    prompt += `Your job is to review demo artifacts and determine if they match the expected demo.\n\n`;
+    prompt += `## demo-expected.json\n\`\`\`json\n${expected}\`\`\`\n\n`;
+    prompt += `## demo-readme.json\n\`\`\`json\n${JSON.stringify(readme, null, 2)}\n\`\`\`\n\n`;
+
+    for (const { file, content } of artifactContents) {
+      prompt += `## Artifact: ${file}\n\`\`\`\n${content}\`\`\`\n\n`;
+    }
+
+    prompt += `## Your task\n\n`;
+    prompt += `Based ONLY on the artifacts above, write a JSON file to: ${actualPath}\n\n`;
+    prompt += `The file must have this exact structure:\n`;
+    prompt += `\`\`\`json\n`;
+    prompt += `{\n`;
+    prompt += `  "overallInterpretation": "your interpretation of what the demo shows",\n`;
+    prompt += `  "artifacts": [\n`;
+    prompt += `    { "file": "filename", "interpretation": "what this artifact shows" }\n`;
+    prompt += `  ],\n`;
+    prompt += `  "demoMatchesExpected": true or false,\n`;
+    prompt += `  "allQuestionsAnswered": true or false,\n`;
+    prompt += `  "validatedBy": "your agent id or session id"\n`;
+    prompt += `}\n`;
+    prompt += `\`\`\`\n\n`;
+    prompt += `Set demoMatchesExpected to true ONLY if the artifacts demonstrate what demo-expected.json describes. Be honest.\n`;
+    prompt += `Set validatedBy to a unique identifier for yourself.\n`;
+
+    return prompt;
+  }
+
   promoteSubtask(subtaskName: string): { oldName: string; newName: string } {
     const ticket = this.resolveTicket(subtaskName);
 
@@ -591,25 +655,25 @@ export class Service {
     return this.repo.loadTicket(id);
   }
 
-  private runGates(newStatus: string, ticket: Ticket): GateResult {
+  private checkExitCriteria(
+    currentStatus: string,
+    ticket: Ticket,
+  ): ExitCriteriaResult {
     const sprintDir = this.getSprintDir(ticket);
 
-    switch (newStatus) {
-      case "readyForDev":
-        return gateReadyForDev(ticket);
-      case "inTesting": {
-        const reviewResult = gateInReview(sprintDir);
-        if (!reviewResult.passed) return reviewResult;
-        return gateInTesting(ticket, this.projectRoot);
-      }
+    switch (currentStatus) {
+      case "inRefinement":
+        return exitInRefinement(ticket);
+      case "inTesting":
+        return exitInTesting(ticket, this.projectRoot);
+      case "inReview":
+        return exitInReview(sprintDir);
+      case "buildingDemo":
+        return exitBuildingDemo(ticket, sprintDir);
       case "validatingDemo":
-        return gateValidatingDemo(ticket, sprintDir);
-      case "demoValidated":
-        return gateDemoValidated(ticket, sprintDir);
-      case "humanDemoValidation":
-        return gateHumanDemoValidation(ticket, sprintDir);
+        return exitValidatingDemo(ticket, sprintDir);
       case "done":
-        return gateDone(
+        return exitDone(
           ticket,
           this.repo.loadAllTickets(),
           this.projectRoot,
@@ -644,15 +708,15 @@ export class Service {
   }
 }
 
-export class GateError extends Error {
+export class ExitCriteriaError extends Error {
   constructor(
     public readonly ticketOrSprint: string,
     public readonly targetStatus: string,
-    public readonly gateErrors: string[],
+    public readonly criteriaErrors: string[],
   ) {
     super(
       `BLOCKED: ${ticketOrSprint} cannot transition to ${targetStatus}`,
     );
-    this.name = "GateError";
+    this.name = "ExitCriteriaError";
   }
 }

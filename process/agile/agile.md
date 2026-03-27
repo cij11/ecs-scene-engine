@@ -15,7 +15,7 @@ Sections:
 - **Title**
 - **Description**
 - **Acceptance Criteria**
-- **Demo Deliverable** (feat tickets only): What the demo should show. Agreed during refinement. Must be expressive enough that an agent reviewing the demo can understand what is being demonstrated without external guidance.
+- **Demo Deliverable**: What the demo should show. Agreed during refinement. Must be expressive enough that an agent reviewing the demo can understand what is being demonstrated without external guidance.
 - **Testing Scenarios**
 - **Testing Notes**
 - **Size**: In story points. Initially an arbitrary estimate, which will get more accurate over time. When a ticket has subtasks, it has no points of its own — its size is the recursive sum of its subtasks.
@@ -31,88 +31,61 @@ Sections:
 
 ## Status Flow
 
-### All tickets (feat, bugfix, task)
+All ticket types follow the same flow:
 
 ```
-draft → refining → readyForDev → inDevelopment → inReview → inTesting → done
-```
-
-### Feature tickets (feat) — additional demo steps before done
-
-```
-... → inTesting → buildingDemo → validatingDemo → demoValidated → humanDemoValidation → done
+inRefinement → readyForDev → inDevelopment → inTesting → inReview → buildingDemo → validatingDemo → done
 ```
 
 ### Status definitions
 
-| Status | Description |
-|--------|-------------|
-| `draft` | Ticket created, not yet refined |
-| `refining` | Being discussed, acceptance criteria being written |
-| `readyForDev` | All fields filled, stakeholder understanding confirmed |
-| `inDevelopment` | Code being written |
-| `inReview` | Agent reviews code quality against acceptance criteria |
-| `inTesting` | CI pipeline runs (typecheck, lint, format, tests) |
-| `buildingDemo` | Demo is being built (feat only) |
-| `validatingDemo` | Demo captured, agent reviewing screenshots (feat only) |
-| `demoValidated` | Agent confirms demo matches expected deliverable (feat only) |
-| `humanDemoValidation` | Stakeholder reviews the demo (feat only) |
-| `done` | Complete |
+| Status | What happens | Exit criteria |
+|--------|-------------|---------------|
+| `inRefinement` | Ticket being refined | All fields filled (description, AC, size, stakeholder understanding, demo deliverable, testing scenarios) |
+| `readyForDev` | Ready to be picked up | None |
+| `inDevelopment` | Code being written | None |
+| `inTesting` | CI pipeline runs | CI passes (`npm run ci`) |
+| `inReview` | Code review against AC | No critical/severe issues in review.md |
+| `buildingDemo` | Demo artifacts created | demo-expected.json, demo-readme.json, and artifact files present |
+| `validatingDemo` | Context-free agent reviews demo | demo-actual.json with interpretations, demoMatchesExpected, validatedBy |
+| `done` | Complete | CI passes, demoAccepted (human interactive confirmation), subtasks done |
 
-### Gates
+Backward transitions are always allowed without exit criteria.
 
-- **→ readyForDev**: All fields filled, Stakeholder Understanding present, Demo Deliverable present (feat only)
-- **→ inReview**: Code exists for the ticket
-- **→ inTesting**: CI pipeline must pass (`npm run ci`)
-- **→ buildingDemo**: Tests must have passed in inTesting
-- **→ validatingDemo**: demo/ directory exists with demo-expected.json and demo-readme.json
-- **→ demoValidated**: demo-actual.json exists with screenshot interpretations and video interpretation. Expected demo matches actual demo.
-- **→ humanDemoValidation**: Agent has validated the demo
-- **→ done**: For feat tickets, human must have accepted the demo. For all tickets, CI must pass.
+## Demo Process
 
-## Demo Process (feat tickets)
+All tickets go through the demo process.
 
 ### During refinement
 
-The parent ticket must define a **Demo Deliverable** — a description of what the demo should show. The demo must be expressive enough that an independent agent reviewing only the screenshots can understand what is being demonstrated.
-
-If a feature is too ambitious to create a demo, or the framework required to easily produce a demo does not exist, the ticket must either be broken down into smaller tasks, or tasks must be created to build the supporting demo infrastructure.
+Every ticket must define a **Demo Deliverable** — a description of what the demo should show. The demo must be expressive enough that an independent agent reviewing only the artifacts can understand what is being demonstrated.
 
 ### buildingDemo
 
-Build the demo. A demo is a video (series of screenshots captured at 30fps) demonstrating the feature.
+Build the demo. Demos produce artifacts:
+- **Video demos** (`artifactType: "video"`): screenshots captured at 30fps
+- **Terminal demos** (`artifactType: "terminal"`): CLI output captured to text files
+
+The following must exist in the sprint demo directory:
+
+1. **demo-expected.json**: `description` and `durationMs`
+2. **demo-readme.json**: `command`, `artifactType`, and `artifacts` array
+3. **Artifact files**: the actual demo output
 
 ### validatingDemo
 
-When transitioning to `validatingDemo`, the following must exist in the ticket's sprint demo directory:
+Run `npm run agile -- ticket validate-demo <name>` to generate a self-contained prompt. Spawn a context-free subagent with this prompt — the agent has NO access to source code or implementation context, only the demo artifacts.
 
-1. **demo-expected.json**:
-   - `description`: What the demo should show (from the ticket's Demo Deliverable)
-   - `durationMs`: Length of the demo in milliseconds
-   - `questions`: Array of questions the validator agent must answer by watching the demo. These are yes/no or short-answer questions derived from the acceptance criteria. Example: "Is there a yellow sphere at the centre of the view?", "Does the blue box orbit the yellow sphere?"
+The subagent writes **demo-actual.json** containing:
+- `overallInterpretation`: what the demo shows in aggregate
+- `artifacts`: array with `file` and `interpretation` per artifact
+- `demoMatchesExpected`: boolean
+- `allQuestionsAnswered`: boolean
+- `validatedBy`: identifier for the validating agent
 
-2. **demo-readme.json**:
-   - `command`: The command to run the demo and capture screenshots
-   - `frameCount`: Number of frames in the demo
-   - `screenshots`: Array of `{ filename, timestampMs, datetimeNZ }`
+### done — human acceptance
 
-### demoValidated
-
-Before transitioning, **demo-actual.json** must exist containing:
-- `screenshots`: Same as demo-readme, plus `screenshotInterpretation` for each frame — what the screenshot shows
-- `videoInterpretation`: What the video shows in aggregate
-- `answers`: Array matching the `questions` from demo-expected.json, each with `{ question, answer, answeredAtFrame }`. The answer is what the validator observed — not what it expects to see.
-- `allQuestionsAnswered`: Boolean — true only when every question has been answered affirmatively based on what was actually observed
-
-The reviewing agent only has access to: the screenshot files, demo-readme.json, demo-expected.json (questions only), and demo-actual.json. It does NOT have access to the source code, ticket description, or acceptance criteria. It must genuinely describe what it sees.
-
-The demo may end early once all questions are answered correctly — the validator does not need to review every frame if all questions are resolved.
-
-The ticket can only move to `humanDemoValidation` once all questions are answered affirmatively and the expected demo matches the actual demo.
-
-### humanDemoValidation
-
-The stakeholder reviews the demo and either accepts or rejects. Recorded in Demo Accepted field.
+`npm run agile -- ticket accept <name>` requires interactive terminal confirmation (type YES). This is the human gate — agents cannot complete it. The stakeholder reviews the demo artifacts and demo-actual.json, then accepts or rejects.
 
 ## Time Tracking
 
@@ -135,7 +108,7 @@ This registers the sprint in `sprints.json` with the ticket list and estimated p
 
 ### Completing a sprint
 
-1. **Demo**: All feat tickets must have completed the demo validation process (buildingDemo → validatingDemo → demoValidated → humanDemoValidation).
+1. **Demo**: All tickets must have completed the demo validation process (buildingDemo → validatingDemo → done with human acceptance).
 
 2. **Close**: Only after all demos are accepted, run `npm run agile -- sprint complete <sprint_name>`. This:
    - Calculates actual hours from Started/Completed timestamps on ticket JSON

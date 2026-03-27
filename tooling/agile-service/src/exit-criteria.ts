@@ -1,17 +1,18 @@
 import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { Ticket, GateResult } from "./types.js";
+import type { Ticket, ExitCriteriaResult } from "./types.js";
 
-function pass(): GateResult {
+function pass(): ExitCriteriaResult {
   return { passed: true, errors: [] };
 }
 
-function fail(errors: string[]): GateResult {
+function fail(errors: string[]): ExitCriteriaResult {
   return { passed: false, errors };
 }
 
-export function gateReadyForDev(ticket: Ticket): GateResult {
+/** Exit criteria for readyForDev: all required fields must be filled. */
+export function exitInRefinement(ticket: Ticket): ExitCriteriaResult {
   const errors: string[] = [];
 
   if (!ticket.description) errors.push("Description is empty");
@@ -45,16 +46,13 @@ export function gateReadyForDev(ticket: Ticket): GateResult {
   return errors.length > 0 ? fail(errors) : pass();
 }
 
-export function gateInTesting(
+/** Exit criteria for inTesting: CI must pass. */
+export function exitInTesting(
   _ticket: Ticket,
   projectRoot: string,
-): GateResult {
+): ExitCriteriaResult {
   const errors: string[] = [];
 
-  // Review gate: check for review.md in sprint directory
-  // (This is handled by the service layer which knows the sprint context)
-
-  // CI must pass
   try {
     execSync("npm run ci", { cwd: projectRoot, stdio: "pipe" });
   } catch (e: unknown) {
@@ -74,14 +72,40 @@ export function gateInTesting(
   return errors.length > 0 ? fail(errors) : pass();
 }
 
-export function gateValidatingDemo(
-  _ticket: Ticket,
-  sprintDir: string | null,
-): GateResult {
+/** Exit criteria for inReview: review.md must exist with no critical/severe issues. */
+export function exitInReview(sprintDir: string | null): ExitCriteriaResult {
   const errors: string[] = [];
 
   if (!sprintDir) {
-    errors.push("Ticket is not in a sprint — cannot validate demo");
+    return pass();
+  }
+
+  const reviewPath = path.join(sprintDir, "review.md");
+  if (!fs.existsSync(reviewPath)) {
+    errors.push("Missing review.md — code review must be documented before proceeding");
+    return fail(errors);
+  }
+
+  const review = fs.readFileSync(reviewPath, "utf-8").toLowerCase();
+  if (review.includes("critical")) {
+    errors.push("review.md contains critical issues — must be resolved before proceeding");
+  }
+  if (review.includes("severe")) {
+    errors.push("review.md contains severe issues — must be resolved before proceeding");
+  }
+
+  return errors.length > 0 ? fail(errors) : pass();
+}
+
+/** Exit criteria for buildingDemo: demo artifacts must be present. */
+export function exitBuildingDemo(
+  _ticket: Ticket,
+  sprintDir: string | null,
+): ExitCriteriaResult {
+  const errors: string[] = [];
+
+  if (!sprintDir) {
+    errors.push("Ticket is not in a sprint — cannot build demo");
     return fail(errors);
   }
 
@@ -128,10 +152,11 @@ export function gateValidatingDemo(
   return errors.length > 0 ? fail(errors) : pass();
 }
 
-export function gateDemoValidated(
+/** Exit criteria for validatingDemo: demo-actual.json must have interpretations and validatedBy. */
+export function exitValidatingDemo(
   _ticket: Ticket,
   sprintDir: string | null,
-): GateResult {
+): ExitCriteriaResult {
   const errors: string[] = [];
 
   if (!sprintDir) {
@@ -143,7 +168,7 @@ export function gateDemoValidated(
   const actualPath = path.join(demoDir, "demo-actual.json");
 
   if (!fs.existsSync(actualPath)) {
-    errors.push("Missing demo-actual.json — agent must review demo artifacts first");
+    errors.push("Missing demo-actual.json — run 'npm run agile -- ticket validate-demo <name>'");
     return fail(errors);
   }
 
@@ -166,51 +191,15 @@ export function gateDemoValidated(
     }
 
     if (!actual.demoMatchesExpected) {
-      errors.push(
-        "demo-actual.json: demoMatchesExpected must be true — agent must confirm demo matches expected",
-      );
+      errors.push("demo-actual.json: demoMatchesExpected must be true");
     }
-  } catch {
-    errors.push("demo-actual.json: invalid JSON");
-  }
 
-  return errors.length > 0 ? fail(errors) : pass();
-}
-
-export function gateHumanDemoValidation(
-  _ticket: Ticket,
-  sprintDir: string | null,
-): GateResult {
-  const errors: string[] = [];
-
-  if (!sprintDir) {
-    errors.push("Ticket is not in a sprint");
-    return fail(errors);
-  }
-
-  const demoDir = path.join(sprintDir, "demo");
-
-  const expectedPath = path.join(demoDir, "demo-expected.json");
-  if (!fs.existsSync(expectedPath)) {
-    errors.push("Missing demo-expected.json — validatingDemo step was not completed");
-  }
-
-  const actualPath = path.join(demoDir, "demo-actual.json");
-  if (!fs.existsSync(actualPath)) {
-    errors.push("Missing demo-actual.json — demoValidated step was not completed");
-    return fail(errors);
-  }
-
-  try {
-    const actual = JSON.parse(fs.readFileSync(actualPath, "utf-8"));
     if (!actual.allQuestionsAnswered) {
-      errors.push("demo-actual.json: allQuestionsAnswered is not true");
+      errors.push("demo-actual.json: allQuestionsAnswered must be true");
     }
-    if (!actual.demoMatchesExpected) {
-      errors.push("demo-actual.json: demoMatchesExpected is not true");
-    }
-    if (!actual.overallInterpretation) {
-      errors.push("demo-actual.json: missing overallInterpretation");
+
+    if (!actual.validatedBy) {
+      errors.push("demo-actual.json: missing validatedBy — must be validated by context-free agent");
     }
   } catch {
     errors.push("demo-actual.json: invalid JSON");
@@ -219,11 +208,12 @@ export function gateHumanDemoValidation(
   return errors.length > 0 ? fail(errors) : pass();
 }
 
-export function gateDone(
+/** Exit criteria for done: CI, timestamps, demoAccepted (human interactive), subtasks done. */
+export function exitDone(
   ticket: Ticket,
   allTickets: Ticket[],
   projectRoot: string,
-): GateResult {
+): ExitCriteriaResult {
   const errors: string[] = [];
 
   if (!ticket.started) {
@@ -255,7 +245,7 @@ export function gateDone(
     errors.push(`CI pipeline failed: ${firstError.trim()}`);
   }
 
-  // All tickets must have accepted demo
+  // All tickets must have accepted demo (human-only interactive confirmation)
   if (!ticket.demoAccepted) {
     errors.push(
       `demoAccepted is not true — run 'npm run agile -- ticket accept ${ticket.name}'`,
@@ -270,31 +260,6 @@ export function gateDone(
         errors.push(`Subtask ${subName} is "${sub.status}", not done`);
       }
     }
-  }
-
-  return errors.length > 0 ? fail(errors) : pass();
-}
-
-export function gateInReview(sprintDir: string | null): GateResult {
-  const errors: string[] = [];
-
-  if (!sprintDir) {
-    // Backlog tickets don't need review.md
-    return pass();
-  }
-
-  const reviewPath = path.join(sprintDir, "review.md");
-  if (!fs.existsSync(reviewPath)) {
-    errors.push("Missing review.md — code review must be documented before proceeding");
-    return fail(errors);
-  }
-
-  const review = fs.readFileSync(reviewPath, "utf-8").toLowerCase();
-  if (review.includes("critical")) {
-    errors.push("review.md contains critical issues — must be resolved before proceeding");
-  }
-  if (review.includes("severe")) {
-    errors.push("review.md contains severe issues — must be resolved before proceeding");
   }
 
   return errors.length > 0 ? fail(errors) : pass();

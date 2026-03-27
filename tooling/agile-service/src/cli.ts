@@ -1,7 +1,8 @@
 import * as path from "node:path";
+import * as readline from "node:readline";
 import { fileURLToPath } from "node:url";
 import { Repository } from "./repository.js";
-import { Service, GateError } from "./service.js";
+import { Service, ExitCriteriaError } from "./service.js";
 
 const PROJECT_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -30,6 +31,7 @@ function usage(): never {
   console.error("  ticket show <name>");
   console.error("  ticket points <parent>");
   console.error("  ticket promote <subtask>");
+  console.error("  ticket validate-demo <name>");
   console.error("");
   console.error("Sprint commands:");
   console.error("  sprint create <name>");
@@ -47,9 +49,9 @@ function usage(): never {
 if (!domain || !action) usage();
 
 function handleError(e: unknown): never {
-  if (e instanceof GateError) {
+  if (e instanceof ExitCriteriaError) {
     console.error(e.message + ":");
-    for (const err of e.gateErrors) {
+    for (const err of e.criteriaErrors) {
       console.error(`  - ${err}`);
     }
     process.exit(1);
@@ -122,9 +124,27 @@ function handleTicket(action: string, args: string[]): void {
         console.error("Usage: ticket accept <name>");
         process.exit(1);
       }
-      const ticket = service.acceptDemo(name);
-      console.log(`Demo accepted for ${ticket.name}.`);
-      break;
+      if (!process.stdin.isTTY) {
+        console.error("Error: ticket accept requires an interactive terminal.");
+        process.exit(1);
+      }
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+      rl.question(
+        `Accept demo for ${name}? Type YES to confirm: `,
+        (answer) => {
+          rl.close();
+          if (answer.trim() !== "YES") {
+            console.error("Aborted — demo not accepted.");
+            process.exit(1);
+          }
+          const ticket = service.acceptDemo(name);
+          console.log(`Demo accepted for ${ticket.name}.`);
+        },
+      );
+      return; // async — don't fall through
     }
 
     case "validate": {
@@ -185,6 +205,17 @@ function handleTicket(action: string, args: string[]): void {
       console.log(
         `${parentName}: ${total} story points (recursive sum of subtasks)`,
       );
+      break;
+    }
+
+    case "validate-demo": {
+      const name = args[0];
+      if (!name) {
+        console.error("Usage: ticket validate-demo <name>");
+        process.exit(1);
+      }
+      const prompt = service.generateValidateDemoPrompt(name);
+      console.log(prompt);
       break;
     }
 

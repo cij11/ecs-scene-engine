@@ -31,7 +31,7 @@ export interface TicketIdRelationship {
 export interface StatusDefinition {
   name: string;
   forwardTransitions: string[];
-  gates: string[]; // gate function names
+  exitCriteria: string[]; // exit criteria function names
   featOnly?: boolean; // demo statuses only apply to feat tickets
 }
 
@@ -77,7 +77,7 @@ export interface AuditEntry {
   team: string;
 }
 
-export interface GateResult {
+export interface ExitCriteriaResult {
   passed: boolean;
   errors: string[];
 }
