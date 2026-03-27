@@ -263,35 +263,194 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 
 ---
 
-## 7. Shared Component Ownership
+## 7. Component Authority Model
 
-### The question
+### The problem
 Can a GPU system and a CPU system both write to `Transform`?
 
-### The answer
-Yes — via **entity-set partitioning**. The ECS query system guarantees disjoint entity sets:
+A CPU system querying `[Transform, Velocity]` matches **all** entities with those components — including GPU-managed particles and physics bodies. If GPU physics writes Transform in `update` and a CPU game logic system also writes Transform, they conflict on overlapping entities.
+
+This isn't a new problem. Every physics engine solves it the same way.
+
+### How established engines handle it
+
+**Godot** uses body-mode authority:
+- **RigidBody**: Physics owns Transform. Game logic communicates via `apply_force()`, `apply_impulse()`. Direct transform writes only allowed inside the `_integrate_forces()` callback. Teleportation goes through the physics server.
+- **CharacterBody (Kinematic)**: Game logic owns Transform via `move_and_slide()`. Physics only provides collision queries.
+- **StaticBody**: Game logic owns Transform entirely. Physics skips integration.
+
+**Bevy + Rapier** uses a three-stage sync pipeline:
+1. **SyncBackend**: Game logic changes (Force, Impulse, Velocity, Transform teleports) → Rapier
+2. **StepSimulation**: Physics runs
+3. **Writeback**: Physics results → back to ECS Transform, Velocity
+
+Game logic writes `ExternalForce`, `ExternalImpulse` components. Physics writes back `Transform`. Direct Transform writes are consumed as teleports.
+
+### Our pattern: Physics authority with intent components
+
+The universal principle: **the physics system has sole write authority over Transform for physics entities. Game logic communicates intent via separate components.**
+
+#### Intent components
+
+```typescript
+// Force: accumulated each frame, consumed by physics integration
+const GpuForce = defineComponent({
+  fx: Float32Array, fy: Float32Array, fz: Float32Array,
+});
+
+// Impulse: immediate velocity change, consumed and zeroed by physics
+const GpuImpulse = defineComponent({
+  ix: Float32Array, iy: Float32Array, iz: Float32Array,
+});
+
+// Teleport: override position, consumed and deactivated by physics
+const GpuTeleport = defineComponent({
+  tx: Float32Array, ty: Float32Array, tz: Float32Array,
+  active: Uint8Array,  // 1 = teleport this frame, cleared by physics
+});
+```
+
+#### Pipeline flow
 
 ```
-GPU system queries [GpuParticleTag, Transform, Velocity] → entities 100..10099
-CPU system queries [PlayerTag, Transform, Velocity]       → entities 0..4
+preUpdate     ← CPU game logic writes GpuForce, GpuImpulse, GpuTeleport
+    ↓ [upload intent components + current Transform/Velocity]
+update        ← GPU physics reads intents, writes Transform + Velocity
+    ↓ [readback Transform + Velocity]
+postUpdate    ← CPU systems READ Transform (AI, game logic checks)
+preRender     ← view sync READS Transform (renderer)
+cleanup       ← GPU zeroes consumed Impulse, clears Teleport flags
 ```
 
-Same `Transform.px` TypedArray, different index ranges. No write conflict.
+#### Inside the GPU integration kernel
 
-### Rules
+```wgsl
+let eid = indices[id.x];
 
-1. **Same component, disjoint entities**: Always safe. Queries partition the entity set. This is the primary pattern.
-2. **Same component, same entity, different phases**: Safe if readback completes between phases. GPU writes in `update`, CPU reads in `postUpdate` after readback.
-3. **Same component, same entity, same phase**: Undefined behavior. The system does not prevent this — it's the same rule as two CPU systems writing the same component on the same entity (also undefined in our engine).
+// Teleport overrides integration
+if (teleport_active[eid] == 1u) {
+  px[eid] = tx[eid];
+  py[eid] = ty[eid];
+  pz[eid] = tz[eid];
+  teleport_active[eid] = 0u;
+} else {
+  // Accumulate forces → velocity
+  vx[eid] = vx[eid] + (fx[eid] / mass[eid]) * subDt;
+  vy[eid] = vy[eid] + ((fy[eid] / mass[eid]) + uniforms.gravity) * subDt;
+  vz[eid] = vz[eid] + (fz[eid] / mass[eid]) * subDt;
+
+  // Apply impulse (instantaneous velocity change)
+  vx[eid] = vx[eid] + ix[eid] / mass[eid];
+  vy[eid] = vy[eid] + iy[eid] / mass[eid];
+  vz[eid] = vz[eid] + iz[eid] / mass[eid];
+
+  // Integrate position
+  px[eid] = px[eid] + vx[eid] * subDt;
+  py[eid] = py[eid] + vy[eid] * subDt;
+  pz[eid] = pz[eid] + vz[eid] * subDt;
+}
+
+// Clear consumed intents
+fx[eid] = 0.0; fy[eid] = 0.0; fz[eid] = 0.0;
+ix[eid] = 0.0; iy[eid] = 0.0; iz[eid] = 0.0;
+```
+
+### Authority categories
+
+| Entity type | Transform writer | Game logic communicates via | Example |
+|------------|-----------------|---------------------------|---------|
+| Physics body | GPU physics (sole writer) | GpuForce, GpuImpulse, GpuTeleport | Rigid bodies, projectiles |
+| Particle | GPU particle kernel (sole writer) | Spawner parameters only | Particle effects |
+| Kinematic | CPU game logic (sole writer) | Transform directly | Player, NPCs, platforms |
+| Static | CPU game logic (sole writer) | Transform directly | Walls, terrain, UI |
+
+Kinematic and static entities don't have `GpuRigidBody` — the GPU physics kernel never queries them. No tag exclusion needed; the component composition itself determines authority.
+
+### Reads are always safe
+
+Any system — CPU or GPU — can **read** Transform at any time after readback. The renderer, AI systems, spatial queries, and game logic checks all read freely. Only *writes* require the authority model above.
 
 ### The gpu prefix strategy
 
 During development, GPU-specific components use the `gpu` prefix:
-- `GpuParticleTag` — tag marking GPU-managed particles
-- `GpuParticleLife` — particle aging (GPU-authoritative, no readback)
-- `GpuParticleVisual` — particle color/alpha (GPU-authoritative)
+- `GpuForce`, `GpuImpulse`, `GpuTeleport` — intent components (CPU writes, GPU reads)
+- `GpuRigidBody`, `GpuCollider` — physics entity markers
+- `GpuParticleTag`, `GpuParticleLife`, `GpuParticleVisual` — particle-specific
 
-Shared components like `Transform` and `Velocity` are NOT duplicated — the whole point is that GPU systems write to the same `Transform` that the renderer reads.
+Shared components (`Transform`, `Velocity`) are NOT duplicated — GPU physics writes to the same Transform the renderer reads. Authority is determined by component composition (having `GpuRigidBody` = physics owns your Transform), not by tag exclusion hacks.
+
+### Authority guards
+
+Authority violations should fail fast at development time rather than silently produce wrong results.
+
+**Registration-time guards**: When a `gpuSystem` is registered, it declares which components it writes. The engine records this as a write claim:
+
+```typescript
+// Recorded when createGpuSystem() is called
+interface WriteClaim {
+  component: ComponentDef;        // e.g. Transform
+  requiredTag: ComponentDef;      // e.g. GpuRigidBody — entities must have this
+  owner: string;                  // e.g. "gpuPhysicsSystem"
+}
+```
+
+**CPU write interception**: Wrap `setComponentData()` with a dev-mode guard that checks whether the entity has a GPU authority tag for the component being written:
+
+```typescript
+function guardedSetComponentData(world, def, entityId, data) {
+  if (DEV_MODE) {
+    const claims = world.gpuWriteClaims?.get(def.id);
+    if (claims) {
+      for (const claim of claims) {
+        if (hasComponent(world, entityId, claim.requiredTag)) {
+          throw new Error(
+            `Authority violation: CPU tried to write ${def.schema ? Object.keys(def.schema).join(',') : 'tag'} ` +
+            `on entity ${entityId}, but ${claim.owner} owns writes for entities with ${claim.requiredTag.id}. ` +
+            `Use intent components (GpuForce, GpuImpulse, GpuTeleport) instead.`
+          );
+        }
+      }
+    }
+  }
+  setComponentData(world.components, def, entityId, data);
+}
+```
+
+**Direct store write detection**: Since systems often write to TypedArrays directly (`t.px[eid] = ...`), the dev-mode guard can optionally return a `Proxy` from `getStore()` that intercepts index assignments:
+
+```typescript
+function guardedGetStore(world, def) {
+  const store = getComponentStore(world.components, def);
+  if (!DEV_MODE || !world.gpuWriteClaims?.has(def.id)) return store;
+
+  // Wrap each field array in a Proxy that checks authority on write
+  const guarded = {};
+  for (const key in store) {
+    guarded[key] = new Proxy(store[key], {
+      set(target, index, value) {
+        const idx = Number(index);
+        if (!isNaN(idx)) {
+          for (const claim of world.gpuWriteClaims.get(def.id)) {
+            if (hasComponentBit(world.bitmasks, idx, claim.requiredTag)) {
+              throw new Error(
+                `Authority violation: CPU write to ${key}[${idx}], ` +
+                `owned by ${claim.owner}`
+              );
+            }
+          }
+        }
+        target[index] = value;
+        return true;
+      }
+    });
+  }
+  return guarded;
+}
+```
+
+**Performance**: The Proxy approach has overhead, so it's dev-mode only (`DEV_MODE` flag, stripped in production builds). The registration-time check is always active and costs nothing at runtime.
+
+**GPU-side guards**: The GPU kernel itself doesn't need guards — it only processes entities returned by its query, which already includes the authority tag. A GPU kernel can't accidentally write to a non-physics entity because those entities aren't in its index buffer.
 
 ---
 
