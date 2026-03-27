@@ -1,0 +1,59 @@
+{
+  "statuses": [
+    {
+      "name": "draft",
+      "forwardTransitions": ["refining"],
+      "gates": []
+    },
+    {
+      "name": "refining",
+      "forwardTransitions": ["readyForDev"],
+      "gates": []
+    },
+    {
+      "name": "readyForDev",
+      "forwardTransitions": ["inDevelopment"],
+      "gates": ["readyForDev"]
+    },
+    {
+      "name": "inDevelopment",
+      "forwardTransitions": ["inReview"],
+      "gates": []
+    },
+    {
+      "name": "inReview",
+      "forwardTransitions": ["inTesting"],
+      "gates": []
+    },
+    {
+      "name": "inTesting",
+      "forwardTransitions": ["buildingDemo"],
+      "gates": ["inTesting"]
+    },
+    {
+      "name": "buildingDemo",
+      "forwardTransitions": ["validatingDemo"],
+      "gates": []
+    },
+    {
+      "name": "validatingDemo",
+      "forwardTransitions": ["demoValidated"],
+      "gates": ["validatingDemo"]
+    },
+    {
+      "name": "demoValidated",
+      "forwardTransitions": ["humanDemoValidation"],
+      "gates": ["demoValidated"]
+    },
+    {
+      "name": "humanDemoValidation",
+      "forwardTransitions": ["done"],
+      "gates": ["humanDemoValidation"]
+    },
+    {
+      "name": "done",
+      "forwardTransitions": [],
+      "gates": ["done"]
+    }
+  ]
+}

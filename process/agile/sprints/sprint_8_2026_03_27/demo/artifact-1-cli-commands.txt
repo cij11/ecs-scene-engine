@@ -1,0 +1,67 @@
+=== Agile Service Demo ===
+
+--- 1. Create a ticket ---
+
+> ecs-scene-engine@1.0.0 agile
+> npx tsx tooling/agile-service/src/cli.ts ticket create task Demo ticket
+
+Created task-ESE-0009 (38622512-3592-49d7-9d12-b7dc9cfd563f)
+
+--- 2. Gate enforcement: blocked transition (draft → readyForDev) ---
+
+> ecs-scene-engine@1.0.0 agile
+> npx tsx tooling/agile-service/src/cli.ts ticket status task-ESE-0009 readyForDev
+
+Error: task-ESE-0009 cannot go from "draft" to "readyForDev". Next: refining
+
+--- 3. Valid transition (draft → refining) ---
+
+> ecs-scene-engine@1.0.0 agile
+> npx tsx tooling/agile-service/src/cli.ts ticket status task-ESE-0009 refining
+
+task-ESE-0009: draft → refining
+
+--- 4. Gate enforcement: readyForDev blocked (missing fields) ---
+
+> ecs-scene-engine@1.0.0 agile
+> npx tsx tooling/agile-service/src/cli.ts ticket status task-ESE-0009 readyForDev
+
+BLOCKED: task-ESE-0009 cannot transition to readyForDev:
+  - Description is empty
+  - Acceptance Criteria is empty
+  - Testing Scenarios is empty
+  - Size is empty
+  - Stakeholder Understanding is empty — stakeholder must explain the ticket back
+  - Demo Deliverable is empty — all tickets must define what the demo should show
+
+--- 5. Ticket listing ---
+
+> ecs-scene-engine@1.0.0 agile
+> npx tsx tooling/agile-service/src/cli.ts ticket list
+
+  task-ESE-0008  draft                 Architecture spike before implementation tickets
+  task-ESE-0009  refining              Demo ticket
+  task-ESE-0006  buildingDemo          Build agile service [sprint_8_2026_03_27]
+  task-ESE-0007  draft                 Single source of truth for ticket state
+
+--- 6. Done ticket cannot be transitioned ---
+(task-ESE-0006 is in buildingDemo, showing forward enforcement)
+
+> ecs-scene-engine@1.0.0 agile
+> npx tsx tooling/agile-service/src/cli.ts ticket status task-ESE-0006 done
+
+Error: task-ESE-0006 cannot go from "buildingDemo" to "done". Next: validatingDemo
+
+--- 7. Backward transition (no gates) ---
+
+> ecs-scene-engine@1.0.0 agile
+> npx tsx tooling/agile-service/src/cli.ts ticket status task-ESE-0009 draft
+
+task-ESE-0009: refining → draft
+
+--- 8. Validate all tickets ---
+
+> ecs-scene-engine@1.0.0 agile
+> npx tsx tooling/agile-service/src/cli.ts ticket validate
+
+All 4 tickets validated. No issues found.

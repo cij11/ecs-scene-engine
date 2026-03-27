@@ -122,49 +122,37 @@ Each time we pick up a ticket, we log the timestamp we started working on it, an
 
 ### Starting a sprint
 
-1. Create the sprint: `npm run sprint:create -- <sprint_name>`
-2. Add tickets: `npm run sprint:add -- <ticket> <sprint_name>`
-3. Start the sprint: `npm run sprint:start -- <sprint_name>`
+1. Create the sprint: `npm run agile -- sprint create <sprint_name>`
+2. Add tickets: `npm run agile -- sprint add <ticket> <sprint_name>`
+3. Start the sprint: `npm run agile -- sprint start <sprint_name>`
 
-This registers the sprint in `sprints.csv` with the ticket list and estimated points.
+This registers the sprint in `sprints.json` with the ticket list and estimated points.
 
 ### During a sprint
 
-- Pick up a ticket: `npm run ticket:status -- <ticket> inDevelopment`
-- Return an incomplete ticket to backlog: `npm run sprint:return -- <ticket> <sprint_name>`
+- Pick up a ticket: `npm run agile -- ticket status <ticket> inDevelopment`
+- Return an incomplete ticket to backlog: `npm run agile -- sprint return <ticket> <sprint_name>`
 
 ### Completing a sprint
 
 1. **Demo**: All feat tickets must have completed the demo validation process (buildingDemo → validatingDemo → demoValidated → humanDemoValidation).
 
-2. **Close**: Only after all demos are accepted, run `npm run sprint:complete -- <sprint_name>`. This:
-   - Calculates actual hours from Started/Completed timestamps on tickets
-   - Updates `sprints.csv` with status `complete` and actual hours
-   - Appends a row to `velocity.csv` with completed points, total points, and hours
+2. **Close**: Only after all demos are accepted, run `npm run agile -- sprint complete <sprint_name>`. This:
+   - Calculates actual hours from Started/Completed timestamps on ticket JSON
+   - Updates `sprints.json` with status `complete` and actual hours
+   - Appends an entry to `velocity.json` with completed points, total points, and hours
 
 Incomplete tickets should be returned to the backlog before completing the sprint, or they will count as unfinished points.
 
 ### Velocity tracking
 
-Run `npm run sprint:velocity` to see a report of all completed sprints, including:
+Run `npm run agile -- sprint velocity` to see a report of all completed sprints, including:
 - Points delivered per sprint
 - Hours per sprint
 - Average velocity (points/sprint, points/hour)
 
-Velocity data is stored in `sprints/velocity.csv`:
+Velocity data is stored in `velocity.json` as an array of entries with completedPoints, totalPoints, completedTickets, totalTickets, and hours.
 
-```
-sprint,completed_points,total_points,completed_tickets,total_tickets,hours
-```
+### Sprint Data
 
-### Sprint CSV
-
-`sprints/sprints.csv` tracks all sprints:
-
-```
-name,status,tickets,estimate,hours
-```
-
-- `tickets` is a `|`-delimited list of ticket names
-- `estimate` is the total story points at sprint start
-- `hours` is filled in at sprint completion
+`sprints.json` tracks all sprints as JSON objects with name, status, ticketNames, totalPoints, completedPoints, hours, and timestamps.

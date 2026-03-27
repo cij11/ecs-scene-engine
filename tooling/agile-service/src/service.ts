@@ -1,0 +1,658 @@
+import type {
+  Ticket,
+  GateResult,
+  Sprint,
+  VelocityEntry,
+} from "./types.js";
+import type { Repository } from "./repository.js";
+import {
+  gateReadyForDev,
+  gateInTesting,
+  gateInReview,
+  gateValidatingDemo,
+  gateDemoValidated,
+  gateHumanDemoValidation,
+  gateDone,
+} from "./gates.js";
+
+export class Service {
+  constructor(
+    private readonly repo: Repository,
+    private readonly projectRoot: string,
+  ) {}
+
+  // --- Ticket commands ---
+
+  createTicket(
+    type: "feat" | "bugfix" | "task",
+    title: string,
+    parentName?: string,
+  ): Ticket {
+    this.repo.ensureDirectories();
+
+    let name: string;
+    if (parentName) {
+      const subNum = this.repo.getNextSubtaskNumber(parentName);
+      name = `${parentName}-${subNum}`;
+    } else {
+      const num = this.repo.getNextTicketNumber(type);
+      name = `${type}-ESE-${num}`;
+    }
+
+    const ticket: Ticket = {
+      id: this.repo.generateId(),
+      name,
+      type,
+      title,
+      status: "draft",
+      description: "",
+      acceptanceCriteria: "",
+      demoDeliverable: "",
+      testingScenarios: "",
+      testingNotes: "",
+      size: null,
+      sizeLabel: null,
+      subtasks: [],
+      stakeholderUnderstanding: "",
+      demoAccepted: false,
+      team: "",
+      started: null,
+      completed: null,
+      blockers: "",
+      knowledgeGaps: "",
+      comments: "",
+      parentName: parentName ?? null,
+      sprintName: null,
+    };
+
+    this.repo.saveTicket(ticket);
+
+    // Register name → UUID
+    const relationships = this.repo.loadRelationships();
+    relationships[name] = ticket.id;
+    this.repo.saveRelationships(relationships);
+
+    // Update parent's subtasks array
+    if (parentName) {
+      const parentId = relationships[parentName];
+      if (parentId) {
+        const parent = this.repo.loadTicket(parentId);
+        if (parent && !parent.subtasks.includes(name)) {
+          parent.subtasks.push(name);
+          this.repo.saveTicket(parent);
+        }
+      }
+    }
+
+    return ticket;
+  }
+
+  transitionTicket(
+    name: string,
+    newStatus: string,
+    team?: string,
+  ): { ticket: Ticket; oldStatus: string } {
+    const ticket = this.resolveTicket(name);
+    const config = this.repo.getStatusesConfig();
+    const teamId = team ?? process.env.CLAUDE_SESSION_ID ?? "unknown";
+
+    // Validate status exists
+    const statusNames = config.statuses.map((s) => s.name);
+    if (!statusNames.includes(newStatus)) {
+      throw new Error(
+        `Invalid status "${newStatus}". Must be one of: ${statusNames.join(", ")}`,
+      );
+    }
+
+    // Block transitions out of done
+    const oldStatus = ticket.status;
+    if (oldStatus === "done") {
+      throw new Error(
+        `${ticket.name} is done — done tickets cannot be transitioned`,
+      );
+    }
+
+    const oldIdx = statusNames.indexOf(oldStatus);
+    const newIdx = statusNames.indexOf(newStatus);
+    const isBackward = oldIdx >= 0 && newIdx >= 0 && newIdx < oldIdx;
+
+    // Forward transitions must follow the allowed path
+    if (!isBackward) {
+      const oldStatusDef = config.statuses.find((s) => s.name === oldStatus);
+      if (
+        oldStatusDef &&
+        !oldStatusDef.forwardTransitions.includes(newStatus)
+      ) {
+        const allowed = oldStatusDef.forwardTransitions.join(", ");
+        throw new Error(
+          `${ticket.name} cannot go from "${oldStatus}" to "${newStatus}". Next: ${allowed || "none"}`,
+        );
+      }
+
+      const gateResult = this.runGates(newStatus, ticket);
+      if (!gateResult.passed) {
+        throw new GateError(ticket.name, newStatus, gateResult.errors);
+      }
+    }
+
+    // Apply transition
+    ticket.status = newStatus;
+
+    const now = new Date().toISOString();
+
+    if (newStatus === "inDevelopment" && !ticket.started) {
+      ticket.started = now;
+    }
+    if (newStatus === "inDevelopment") {
+      ticket.team = teamId;
+    }
+    if (newStatus === "done" && !ticket.completed) {
+      ticket.completed = now;
+    }
+
+    this.repo.saveTicket(ticket);
+
+    // Audit log
+    this.repo.appendAudit({
+      timestamp: now,
+      ticket: ticket.name,
+      from: oldStatus,
+      to: newStatus,
+      team: teamId,
+    });
+
+    return { ticket, oldStatus };
+  }
+
+  acceptDemo(name: string): Ticket {
+    const ticket = this.resolveTicket(name);
+    ticket.demoAccepted = true;
+    this.repo.saveTicket(ticket);
+    return ticket;
+  }
+
+  validateTickets(): { errors: string[]; warnings: string[] } {
+    const tickets = this.repo.loadAllTickets();
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    const relationships = this.repo.loadRelationships();
+
+    for (const ticket of tickets) {
+      // Check required fields exist
+      if (!ticket.id) errors.push(`${ticket.name}: missing id`);
+      if (!ticket.name) errors.push(`${ticket.name ?? "unknown"}: missing name`);
+      if (!ticket.type) errors.push(`${ticket.name}: missing type`);
+
+      // Check relationship consistency
+      const registeredId = relationships[ticket.name];
+      if (!registeredId) {
+        warnings.push(
+          `${ticket.name}: not found in ticket_id_relationships.json`,
+        );
+      } else if (registeredId !== ticket.id) {
+        errors.push(
+          `${ticket.name}: UUID mismatch — ticket says "${ticket.id}" but relationships says "${registeredId}"`,
+        );
+      }
+
+      // Check subtask references
+      for (const subName of ticket.subtasks) {
+        const subId = relationships[subName];
+        if (!subId) {
+          warnings.push(
+            `${ticket.name}: subtask "${subName}" not found in relationships`,
+          );
+        }
+      }
+    }
+
+    return { errors, warnings };
+  }
+
+  listTickets(): Ticket[] {
+    return this.repo.loadAllTickets();
+  }
+
+  getTicket(name: string): Ticket {
+    return this.resolveTicket(name);
+  }
+
+  // --- Sprint commands ---
+
+  createSprint(name: string): Sprint {
+    const existing = this.repo.findSprint(name);
+    if (existing) {
+      throw new Error(`Sprint "${name}" already exists.`);
+    }
+
+    const sprint: Sprint = {
+      name,
+      status: "planning",
+      ticketNames: [],
+      totalPoints: 0,
+      completedPoints: 0,
+      totalTickets: 0,
+      completedTickets: 0,
+      hours: 0,
+      startedAt: null,
+      completedAt: null,
+    };
+
+    const data = this.repo.loadSprints();
+    data.sprints.push(sprint);
+    this.repo.saveSprints(data);
+
+    return sprint;
+  }
+
+  addToSprint(ticketName: string, sprintName: string): void {
+    const ticket = this.resolveTicket(ticketName);
+    const sprint = this.repo.findSprint(sprintName);
+    if (!sprint) {
+      throw new Error(`Sprint "${sprintName}" not found.`);
+    }
+
+    if (sprint.ticketNames.includes(ticketName)) {
+      throw new Error(
+        `Ticket "${ticketName}" is already in sprint "${sprintName}".`,
+      );
+    }
+
+    // Update ticket
+    ticket.sprintName = sprintName;
+    this.repo.saveTicket(ticket);
+
+    // Update sprint
+    sprint.ticketNames.push(ticketName);
+    const data = this.repo.loadSprints();
+    const idx = data.sprints.findIndex((s) => s.name === sprintName);
+    data.sprints[idx] = sprint;
+    this.repo.saveSprints(data);
+
+    // Also add subtasks
+    const allTickets = this.repo.loadAllTickets();
+    const subtasks = allTickets.filter((t) => t.parentName === ticketName);
+    for (const sub of subtasks) {
+      if (!sprint.ticketNames.includes(sub.name)) {
+        sub.sprintName = sprintName;
+        this.repo.saveTicket(sub);
+        sprint.ticketNames.push(sub.name);
+      }
+    }
+
+    // Save again with subtasks
+    data.sprints[idx] = sprint;
+    this.repo.saveSprints(data);
+  }
+
+  startSprint(sprintName: string): Sprint {
+    const data = this.repo.loadSprints();
+    const sprint = data.sprints.find((s) => s.name === sprintName);
+    if (!sprint) {
+      throw new Error(`Sprint "${sprintName}" not found.`);
+    }
+
+    if (sprint.status !== "planning") {
+      throw new Error(
+        `Sprint "${sprintName}" is "${sprint.status}", not "planning".`,
+      );
+    }
+
+    // Calculate total points from tickets
+    let totalPoints = 0;
+    let ticketCount = 0;
+
+    for (const ticketName of sprint.ticketNames) {
+      const ticket = this.resolveTicketSafe(ticketName);
+      if (!ticket) continue;
+
+      // Skip parent tickets whose size comes from subtasks
+      if (ticket.sizeLabel?.startsWith("Sum of subtasks")) continue;
+
+      if (ticket.size !== null && !isNaN(ticket.size)) {
+        totalPoints += ticket.size;
+      }
+      ticketCount++;
+    }
+
+    sprint.status = "active";
+    sprint.totalPoints = totalPoints;
+    sprint.totalTickets = ticketCount;
+    sprint.startedAt = new Date().toISOString();
+
+    const idx = data.sprints.findIndex((s) => s.name === sprintName);
+    data.sprints[idx] = sprint;
+    this.repo.saveSprints(data);
+
+    return sprint;
+  }
+
+  completeSprint(sprintName: string): {
+    sprint: Sprint;
+    warnings: string[];
+  } {
+    const data = this.repo.loadSprints();
+    const sprint = data.sprints.find((s) => s.name === sprintName);
+    if (!sprint) {
+      throw new Error(`Sprint "${sprintName}" not found.`);
+    }
+
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // Calculate actuals from ticket JSON
+    let completedPoints = 0;
+    let completedCount = 0;
+    let totalPoints = 0;
+    let totalCount = 0;
+    let totalHours = 0;
+    const incompleteTickets: string[] = [];
+
+    for (const ticketName of sprint.ticketNames) {
+      const ticket = this.resolveTicketSafe(ticketName);
+      if (!ticket) continue;
+
+      // Skip parent tickets
+      if (ticket.sizeLabel?.startsWith("Sum of subtasks")) continue;
+
+      const points = ticket.size ?? 0;
+      totalCount++;
+      totalPoints += points;
+
+      if (ticket.status === "done") {
+        completedCount++;
+        completedPoints += points;
+      } else {
+        incompleteTickets.push(`${ticket.name} (${ticket.status})`);
+      }
+
+      // Calculate hours
+      if (ticket.started && ticket.completed) {
+        const started = new Date(ticket.started);
+        const completed = new Date(ticket.completed);
+        if (!isNaN(started.getTime()) && !isNaN(completed.getTime())) {
+          totalHours +=
+            (completed.getTime() - started.getTime()) / (1000 * 60 * 60);
+        }
+      }
+    }
+
+    // Gate: all tickets must have demoAccepted
+    for (const ticketName of sprint.ticketNames) {
+      const ticket = this.resolveTicketSafe(ticketName);
+      if (ticket && !ticket.demoAccepted) {
+        errors.push(
+          `${ticket.name}: demoAccepted is not true — run 'npm run agile -- ticket accept ${ticket.name}'`,
+        );
+      }
+    }
+
+    // Gate: must have tickets with points
+    if (totalCount === 0) {
+      errors.push("No tickets with story points found — velocity cannot be calculated");
+    }
+
+    if (errors.length > 0) {
+      throw new GateError(sprintName, "complete", errors);
+    }
+
+    // Warnings
+    if (incompleteTickets.length > 0) {
+      warnings.push(`Incomplete tickets: ${incompleteTickets.join(", ")}`);
+    }
+    if (completedPoints === 0 && completedCount === 0) {
+      warnings.push("No tickets completed — sprint velocity will be 0");
+    }
+
+    // Apply
+    const actualHours = Math.round(totalHours * 100) / 100;
+
+    sprint.status = "complete";
+    sprint.completedPoints = completedPoints;
+    sprint.completedTickets = completedCount;
+    sprint.totalPoints = totalPoints;
+    sprint.totalTickets = totalCount;
+    sprint.hours = actualHours;
+    sprint.completedAt = new Date().toISOString();
+
+    const idx = data.sprints.findIndex((s) => s.name === sprintName);
+    data.sprints[idx] = sprint;
+    this.repo.saveSprints(data);
+
+    // Append velocity
+    const velocityEntry: VelocityEntry = {
+      sprint: sprintName,
+      completedPoints,
+      totalPoints,
+      completedTickets: completedCount,
+      totalTickets: totalCount,
+      hours: actualHours,
+    };
+    this.repo.appendVelocity(velocityEntry);
+
+    return { sprint, warnings };
+  }
+
+  velocityReport(): {
+    entries: VelocityEntry[];
+    totalPoints: number;
+    totalHours: number;
+    avgPointsPerSprint: number;
+    avgHoursPerSprint: number;
+    pointsPerHour: number;
+  } {
+    const data = this.repo.loadVelocity();
+    const entries = data.entries;
+
+    let totalPoints = 0;
+    let totalHours = 0;
+
+    for (const e of entries) {
+      totalPoints += e.completedPoints;
+      totalHours += e.hours;
+    }
+
+    const count = entries.length || 1;
+
+    return {
+      entries,
+      totalPoints,
+      totalHours: Math.round(totalHours * 100) / 100,
+      avgPointsPerSprint: Math.round((totalPoints / count) * 10) / 10,
+      avgHoursPerSprint: Math.round((totalHours / count) * 100) / 100,
+      pointsPerHour:
+        totalHours > 0
+          ? Math.round((totalPoints / totalHours) * 100) / 100
+          : 0,
+    };
+  }
+
+  returnToBacklog(ticketName: string, sprintName: string): void {
+    const ticket = this.resolveTicket(ticketName);
+    const data = this.repo.loadSprints();
+    const sprint = data.sprints.find((s) => s.name === sprintName);
+    if (!sprint) {
+      throw new Error(`Sprint "${sprintName}" not found.`);
+    }
+
+    // Remove from sprint
+    sprint.ticketNames = sprint.ticketNames.filter((n) => n !== ticketName);
+    ticket.sprintName = null;
+    this.repo.saveTicket(ticket);
+
+    // Also remove subtasks
+    const allTickets = this.repo.loadAllTickets();
+    const subtasks = allTickets.filter((t) => t.parentName === ticketName);
+    for (const sub of subtasks) {
+      sprint.ticketNames = sprint.ticketNames.filter((n) => n !== sub.name);
+      sub.sprintName = null;
+      this.repo.saveTicket(sub);
+    }
+
+    const idx = data.sprints.findIndex((s) => s.name === sprintName);
+    data.sprints[idx] = sprint;
+    this.repo.saveSprints(data);
+  }
+
+  sumPoints(parentName: string): number {
+    const allTickets = this.repo.loadAllTickets();
+    const parent = allTickets.find((t) => t.name === parentName);
+    if (!parent) {
+      throw new Error(`Ticket "${parentName}" not found.`);
+    }
+
+    const total = this.sumRecursive(parentName, allTickets);
+
+    parent.sizeLabel = `Sum of subtasks (${total})`;
+    parent.size = total;
+    this.repo.saveTicket(parent);
+
+    return total;
+  }
+
+  promoteSubtask(subtaskName: string): { oldName: string; newName: string } {
+    const ticket = this.resolveTicket(subtaskName);
+
+    if (!ticket.parentName) {
+      throw new Error(`"${subtaskName}" is not a subtask — no parent found.`);
+    }
+
+    // Generate new top-level name
+    const num = this.repo.getNextTicketNumber(ticket.type);
+    const newName = `${ticket.type}-ESE-${num}`;
+
+    // Update relationships
+    const relationships = this.repo.loadRelationships();
+    delete relationships[subtaskName];
+    relationships[newName] = ticket.id;
+    this.repo.saveRelationships(relationships);
+
+    // Update ticket
+    const oldName = ticket.name;
+    ticket.name = newName;
+    ticket.title = ticket.title.replace(subtaskName, newName);
+    ticket.parentName = null;
+    this.repo.saveTicket(ticket);
+
+    // Update parent's subtask list
+    const parentId = this.repo.resolveTicketName(
+      subtaskName.match(/^((?:feat|bugfix|task)-ESE-\d{4})-\d{2}$/)?.[1] ?? "",
+    );
+    if (parentId) {
+      const parent = this.repo.loadTicket(parentId);
+      if (parent) {
+        parent.subtasks = parent.subtasks.filter((s) => s !== subtaskName);
+        this.repo.saveTicket(parent);
+      }
+    }
+
+    // Rename any child subtasks
+    const allTickets = this.repo.loadAllTickets();
+    for (const child of allTickets) {
+      if (child.parentName === oldName) {
+        const oldChildName = child.name;
+        const subNum = oldChildName.split("-").pop()!;
+        const newChildName = `${newName}-${subNum}`;
+
+        delete relationships[oldChildName];
+        relationships[newChildName] = child.id;
+
+        child.name = newChildName;
+        child.parentName = newName;
+        child.title = child.title.replace(oldChildName, newChildName);
+        this.repo.saveTicket(child);
+      }
+    }
+    this.repo.saveRelationships(relationships);
+
+    return { oldName, newName };
+  }
+
+  // --- Private helpers ---
+
+  private resolveTicket(name: string): Ticket {
+    const id = this.repo.resolveTicketName(name);
+    if (!id) {
+      throw new Error(`Ticket "${name}" not found.`);
+    }
+    const ticket = this.repo.loadTicket(id);
+    if (!ticket) {
+      throw new Error(
+        `Ticket "${name}" has UUID "${id}" but JSON file is missing.`,
+      );
+    }
+    return ticket;
+  }
+
+  private resolveTicketSafe(name: string): Ticket | null {
+    const id = this.repo.resolveTicketName(name);
+    if (!id) return null;
+    return this.repo.loadTicket(id);
+  }
+
+  private runGates(newStatus: string, ticket: Ticket): GateResult {
+    const sprintDir = this.getSprintDir(ticket);
+
+    switch (newStatus) {
+      case "readyForDev":
+        return gateReadyForDev(ticket);
+      case "inTesting": {
+        const reviewResult = gateInReview(sprintDir);
+        if (!reviewResult.passed) return reviewResult;
+        return gateInTesting(ticket, this.projectRoot);
+      }
+      case "validatingDemo":
+        return gateValidatingDemo(ticket, sprintDir);
+      case "demoValidated":
+        return gateDemoValidated(ticket, sprintDir);
+      case "humanDemoValidation":
+        return gateHumanDemoValidation(ticket, sprintDir);
+      case "done":
+        return gateDone(
+          ticket,
+          this.repo.loadAllTickets(),
+          this.projectRoot,
+        );
+      default:
+        return { passed: true, errors: [] };
+    }
+  }
+
+  private getSprintDir(ticket: Ticket): string | null {
+    if (!ticket.sprintName) return null;
+    // Sprint directories are still in process/agile/sprints/<name>
+    return `${this.projectRoot}/process/agile/sprints/${ticket.sprintName}`;
+  }
+
+  private sumRecursive(parentName: string, allTickets: Ticket[]): number {
+    let total = 0;
+    const children = allTickets.filter((t) => t.parentName === parentName);
+
+    for (const child of children) {
+      const grandchildren = allTickets.filter(
+        (t) => t.parentName === child.name,
+      );
+      if (grandchildren.length > 0) {
+        total += this.sumRecursive(child.name, allTickets);
+      } else {
+        total += child.size ?? 0;
+      }
+    }
+
+    return total;
+  }
+}
+
+export class GateError extends Error {
+  constructor(
+    public readonly ticketOrSprint: string,
+    public readonly targetStatus: string,
+    public readonly gateErrors: string[],
+  ) {
+    super(
+      `BLOCKED: ${ticketOrSprint} cannot transition to ${targetStatus}`,
+    );
+    this.name = "GateError";
+  }
+}

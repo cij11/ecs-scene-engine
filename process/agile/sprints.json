@@ -1,0 +1,32 @@
+{
+  "sprints": [
+    {
+      "name": "sprint_8_2026_03_27",
+      "status": "complete",
+      "ticketNames": [
+        "task-ESE-0006"
+      ],
+      "totalPoints": 8,
+      "completedPoints": 8,
+      "totalTickets": 1,
+      "completedTickets": 1,
+      "hours": 0.45,
+      "startedAt": "2026-03-26T15:53:49.180Z",
+      "completedAt": "2026-03-26T16:22:48.309Z"
+    },
+    {
+      "name": "demo_sprint",
+      "status": "active",
+      "ticketNames": [
+        "task-ESE-0009"
+      ],
+      "totalPoints": 0,
+      "completedPoints": 0,
+      "totalTickets": 1,
+      "completedTickets": 0,
+      "hours": 0,
+      "startedAt": "2026-03-26T15:58:48.673Z",
+      "completedAt": null
+    }
+  ]
+}

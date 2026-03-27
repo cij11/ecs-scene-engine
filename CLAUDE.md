@@ -12,15 +12,15 @@ This project uses a file-based locking system for coordinating work across multi
 
 ## Ticket Status Changes
 
-**NEVER manually edit `process/agile/sprints/ticketStatus.json`.** This file is the authoritative source of ticket status and may ONLY be written by the automation script.
+**NEVER manually edit ticket JSON files in `process/agile/tickets/`.** These are managed by the agile service.
 
-**NEVER manually edit a ticket's `## Status` field.** All status transitions must go through:
+**All status transitions must go through:**
 
 ```
-npm run ticket:status -- <ticket> <new_status>
+npm run agile -- ticket status <ticket> <new_status>
 ```
 
-This script enforces gates (CI, field validation, demo checks), updates ticketStatus.json, and writes to the audit log. Manual edits will be detected by `npm run ticket:validate` and flagged as violations.
+The legacy `npm run ticket:status` still works (it delegates to the agile service). The service enforces gates (CI, field validation, demo checks) and writes to the audit log. Run `npm run agile -- ticket validate` to check consistency.
 
 ## Code Review
 
@@ -50,5 +50,5 @@ See `process/agile/agile.md` for the full process. Key points:
 
 - Tickets follow the status flow defined in agile.md
 - `feat` tickets require a Demo Deliverable and must go through the demo validation process
-- All transitions are gated by the automation scripts
+- All transitions are gated by the agile service (`npm run agile -- <command>`)
 - CI must pass before marking tickets done (`npm run ci`)

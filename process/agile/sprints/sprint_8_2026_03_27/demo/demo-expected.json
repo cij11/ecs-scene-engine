@@ -1,0 +1,4 @@
+{
+  "description": "Demonstrate the agile service CLI: create a ticket, transition through statuses showing gate enforcement (blocking and passing), show ticket listing, and run a sprint lifecycle (create, add, start, complete with velocity). Terminal output captured to text files.",
+  "durationMs": 10000
+}

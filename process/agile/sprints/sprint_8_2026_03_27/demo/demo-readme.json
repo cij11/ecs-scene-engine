@@ -1,0 +1,8 @@
+{
+  "command": "npm run agile -- <various commands>",
+  "artifactType": "terminal",
+  "artifacts": [
+    "artifact-1-cli-commands.txt",
+    "artifact-2-sprint-lifecycle.txt"
+  ]
+}
