@@ -1,0 +1,12 @@
+{
+  "overallInterpretation": "6/6 carving tests passed: density initialisation on first carve, circle carving zeroing density, collision edge production, accumulated multiple carves, physics version increment, polygon carve.",
+  "artifacts": [
+    {
+      "file": "artifact-carve.txt",
+      "interpretation": "Vitest output showing 6 passing tests covering the carve system. All expected criteria (density init, circle, polygon, multiple carves, collision edges) confirmed."
+    }
+  ],
+  "demoMatchesExpected": true,
+  "allQuestionsAnswered": true,
+  "validatedBy": "agent-a871c7c1d11021992"
+}

@@ -1,0 +1,1 @@
+{"command":"npx vitest run engine/tilemap/carve.test.ts","artifactType":"terminal","artifacts":["artifact-carve.txt"]}

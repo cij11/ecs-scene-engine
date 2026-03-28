@@ -10,3 +10,5 @@ bevy-gpu-compute https://github.com/Sheldonfrith/bevy_gpu_compute.git
 bevy-hanabi https://github.com/djeedai/bevy_hanabi.git
 gpu-physics-unity https://github.com/jknightdoeswork/gpu-physics-unity.git
 gpu-gems-broadphase https://developer.nvidia.com/gpugems/gpugems3/part-v-physics-simulation/chapter-32-broad-phase-collision-detection-cuda
+box2d-erin-catto https://box2d.org/publications/ (Sequential Impulse solver papers — GDC talks on warmstarting, accumulated impulses)
+spatial-hashing-green https://developer.download.nvidia.com/assets/cuda/files/particles.pdf (Simon Green, CUDA particles — canonical spatial hash GPU reference)

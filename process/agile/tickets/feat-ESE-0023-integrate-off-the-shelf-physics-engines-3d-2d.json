@@ -1,0 +1,31 @@
+{
+  "id": "17adc43d-7de1-4d4d-aee6-1e04a6f78619",
+  "name": "feat-ESE-0023",
+  "type": "feat",
+  "title": "Integrate off-the-shelf physics engines (3D + 2D)",
+  "status": "refinement",
+  "description": "After carving, tile meshes still render as their original polygon shape. The carved holes are tracked in the density grid and collision edges are correct, but the visual tile geometry is not updated. This ticket adds density-based visual rendering: after carving, regenerate tile geometry from the marching squares output so carved holes are visually visible. Two approaches: (1) rebuild ShapeGeometry from marching squares contour, or (2) render carved chunks as a density texture on a quad.",
+  "acceptanceCriteria": "- Off-the-shelf 3D physics engine integrated as ECS system\n- Off-the-shelf 2D physics engine integrated as ECS system\n- Bodies stack correctly (tower of blocks stable)\n- Spheres settle into flat layer under gravity\n- Physics engine syncs with Transform component\n- Demo story in Storybook\n- Architecture doc showing ECS↔physics engine integration",
+  "demoDeliverable": "Screenshot showing tiles with visible carved holes — background visible through carved areas.",
+  "testingScenarios": "- 500 spheres settle flat under gravity\n- Tower of 10 stacked boxes remains stable\n- Performance comparison vs our GPU physics\n- ECS Transform reflects physics engine positions",
+  "testingNotes": "",
+  "size": 3,
+  "sizeLabel": null,
+  "subtasks": [
+    "feat-ESE-0023-01",
+    "feat-ESE-0023-02",
+    "feat-ESE-0023-03",
+    "feat-ESE-0023-04",
+    "feat-ESE-0023-05"
+  ],
+  "stakeholderUnderstanding": "",
+  "demoAccepted": false,
+  "team": "",
+  "started": null,
+  "completed": null,
+  "blockers": "",
+  "knowledgeGaps": "",
+  "comments": "",
+  "parentName": null,
+  "sprintName": null
+}

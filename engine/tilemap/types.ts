@@ -170,3 +170,47 @@ export const TILE_HALF_LEFT: Vec2[] = [
   { x: 0.5, y: 1 },
   { x: 0, y: 1 },
 ];
+
+export const TILE_HALF_TOP: Vec2[] = [
+  { x: 0, y: 0.5 },
+  { x: 1, y: 0.5 },
+  { x: 1, y: 1 },
+  { x: 0, y: 1 },
+];
+
+export const TILE_HALF_RIGHT: Vec2[] = [
+  { x: 0.5, y: 0 },
+  { x: 1, y: 0 },
+  { x: 1, y: 1 },
+  { x: 0.5, y: 1 },
+];
+
+// --- Wedge tiles (45° angle) ---
+
+/** Wedge: bottom-left corner filled (triangle from BL) */
+export const TILE_WEDGE_BL: Vec2[] = [
+  { x: 0, y: 0 },
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+];
+
+/** Wedge: bottom-right corner filled (triangle from BR) */
+export const TILE_WEDGE_BR: Vec2[] = [
+  { x: 0, y: 0 },
+  { x: 1, y: 0 },
+  { x: 1, y: 1 },
+];
+
+/** Wedge: top-left corner filled (triangle from TL) */
+export const TILE_WEDGE_TL: Vec2[] = [
+  { x: 0, y: 0 },
+  { x: 1, y: 1 },
+  { x: 0, y: 1 },
+];
+
+/** Wedge: top-right corner filled (triangle from TR) */
+export const TILE_WEDGE_TR: Vec2[] = [
+  { x: 1, y: 0 },
+  { x: 1, y: 1 },
+  { x: 0, y: 1 },
+];

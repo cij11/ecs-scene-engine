@@ -28,12 +28,12 @@ export default {
 };
 
 async function createOptimizedDemo(container: HTMLElement) {
-  const MAX_BODIES = 65536;
+  const MAX_BODIES = 20000;
   const INITIAL_BODIES = 64;
   const TARGET_FPS = 40;
-  const BOUNDS = 10;
+  const BOUNDS = 5;
   const CELL_SIZE = (BOUNDS * 2) / GRID_SIZE;
-  const SPHERE_RADIUS = 0.25;
+  const SPHERE_RADIUS = 0.12;
 
   if (!navigator.gpu) {
     container.textContent = "WebGPU not available";
@@ -94,12 +94,12 @@ async function createOptimizedDemo(container: HTMLElement) {
   const indices = new Uint32Array(MAX_BODIES);
 
   function initBody(i: number): void {
-    px[i] = (Math.random() - 0.5) * BOUNDS * 1.5;
-    py[i] = BOUNDS * 0.5 + Math.random() * BOUNDS * 0.5;
-    pz[i] = (Math.random() - 0.5) * BOUNDS * 1.5;
-    velX[i] = (Math.random() - 0.5) * 3;
-    velY[i] = (Math.random() - 0.5) * 2;
-    velZ[i] = (Math.random() - 0.5) * 3;
+    px[i] = (Math.random() - 0.5) * BOUNDS * 1.2;
+    py[i] = BOUNDS * 0.3 + Math.random() * BOUNDS * 0.6;
+    pz[i] = (Math.random() - 0.5) * BOUNDS * 1.2;
+    velX[i] = (Math.random() - 0.5) * 2;
+    velY[i] = (Math.random() - 0.5) * 1;
+    velZ[i] = (Math.random() - 0.5) * 2;
     indices[i] = i;
   }
   for (let i = 0; i < MAX_BODIES; i++) initBody(i);
@@ -320,7 +320,7 @@ async function createOptimizedDemo(container: HTMLElement) {
 
   // Fixed camera — looking at scene from front-above
   const proj = mat4Perspective(Math.PI / 3, width / height, 0.1, 200);
-  const view = mat4LookAt([0, BOUNDS * 1.2, BOUNDS * 2.5], [0, -BOUNDS * 0.3, 0], [0, 1, 0]);
+  const view = mat4LookAt([0, BOUNDS * 1.5, BOUNDS * 3], [0, -BOUNDS * 0.2, 0], [0, 1, 0]);
   const viewProj = mat4Multiply(proj, view);
 
   // Upload camera once (fixed)
@@ -332,25 +332,21 @@ async function createOptimizedDemo(container: HTMLElement) {
   device.queue.writeBuffer(cameraBuf, 0, cameraData);
 
   // --- Timing ---
-  let physicsFps = 60;
-  let renderFps = 60;
+  let displayFps = 60;
   let frameTimesMs: number[] = [];
   let lastRenderTime = performance.now();
-  let pendingGpuFrames = 0;
-  let gpuCompleted = 0;
-  let gpuMeasureStart = performance.now();
+  let stoppedAt = 0; // timestamp when growth stopped
   let growthTimer = 0;
   let warmupTimer = 0;
   const WARMUP_MS = 3000;
   let destroyed = false;
 
-  function frame() {
+  async function frame() {
     if (destroyed) return;
 
-    const renderStart = performance.now();
-    const renderDt = renderStart - lastRenderTime;
-    lastRenderTime = renderStart;
-    frameTimesMs.push(renderDt);
+    const frameStart = performance.now();
+    const frameDt = frameStart - lastRenderTime;
+    lastRenderTime = frameStart;
 
     const bodyWG = Math.ceil(activeCount / 64);
 
@@ -402,36 +398,26 @@ async function createOptimizedDemo(container: HTMLElement) {
 
     device.queue.submit([encoder.finish()]);
 
-    // Track GPU throughput by counting completed frames per second
-    pendingGpuFrames++;
-    device.queue.onSubmittedWorkDone().then(() => {
-      gpuCompleted++;
-    });
+    // Wait for GPU — honest frame timing
+    await device.queue.onSubmittedWorkDone();
 
-    // Calculate fps every second
+    const frameEnd = performance.now();
+    const totalFrameMs = frameEnd - frameStart;
+    frameTimesMs.push(totalFrameMs);
+
     if (frameTimesMs.length >= 10) {
       const avgMs = frameTimesMs.reduce((a, b) => a + b, 0) / frameTimesMs.length;
-      renderFps = avgMs > 0 ? Math.round(1000 / avgMs) : 999;
+      displayFps = avgMs > 0 ? Math.round(1000 / avgMs) : 999;
       frameTimesMs = [];
-
-      // Physics fps = GPU frames completed per second
-      const elapsed = (performance.now() - gpuMeasureStart) / 1000;
-      if (elapsed > 0.5) {
-        physicsFps = Math.round(gpuCompleted / elapsed);
-        gpuCompleted = 0;
-        gpuMeasureStart = performance.now();
-      }
     }
 
-    const effectiveFps = Math.min(physicsFps, renderFps);
-
     // Growth
-    warmupTimer += renderDt;
+    warmupTimer += frameDt;
     if (!stopped && warmupTimer > WARMUP_MS) {
-      growthTimer += renderDt;
+      growthTimer += frameDt;
       if (growthTimer >= 1000) {
         growthTimer = 0;
-        if (effectiveFps > TARGET_FPS && activeCount < MAX_BODIES) {
+        if (displayFps > TARGET_FPS && activeCount < MAX_BODIES) {
           const toAdd = Math.max(32, Math.ceil(activeCount * 0.2));
           const newCount = Math.min(activeCount + toAdd, MAX_BODIES);
           for (let i = activeCount; i < newCount; i++) initBody(i);
@@ -439,8 +425,16 @@ async function createOptimizedDemo(container: HTMLElement) {
           device.queue.writeBuffer(idxBuf, 0, indices.buffer, 0, activeCount * 4);
         } else {
           stopped = true;
+          stoppedAt = performance.now();
         }
       }
+    }
+
+    // Free resources 5 seconds after growth stops
+    if (stopped && stoppedAt > 0 && performance.now() - stoppedAt > 5000) {
+      hudEl.innerHTML += `<br><span style="color:#888;">Demo ended — resources freed</span>`;
+      device.destroy();
+      return;
     }
 
     const status = stopped
@@ -449,9 +443,7 @@ async function createOptimizedDemo(container: HTMLElement) {
         : `stopped @ ${TARGET_FPS}fps`
       : "growing...";
     hudEl.innerHTML =
-      `${activeCount} particles | ${status}<br>` +
-      `Physics: ${physicsFps} fps | Render: ${renderFps} fps<br>` +
-      `ZERO-COPY compute+render`;
+      `${activeCount} particles | ${status}<br>` + `${displayFps} fps | ZERO-COPY compute+render`;
 
     requestAnimationFrame(frame);
   }

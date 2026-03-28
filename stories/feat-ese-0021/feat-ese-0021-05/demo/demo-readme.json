@@ -1,0 +1,1 @@
+{"command":"npx tsx tooling/capture-page.ts tilemap-demo.html","artifactType":"video","artifacts":["tilemap-screenshot.png"]}

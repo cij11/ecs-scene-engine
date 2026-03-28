@@ -101,7 +101,6 @@ describe("marchingSquares", () => {
   it("edges are in world coordinates (0 to chunkSize)", () => {
     const chunkSize = 4;
     const resolution = 2;
-    const side = densityGridSide(chunkSize, resolution);
     const grid = allocateDensityGrid(chunkSize, resolution);
     fillDensityGrid(grid, 255);
 
