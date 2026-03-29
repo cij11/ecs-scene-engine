@@ -743,12 +743,10 @@ export class Service {
   }
 
   private getStoryDir(ticket: Ticket): string | null {
-    const slug = ticket.name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
     if (ticket.parentName) {
-      const parentSlug = ticket.parentName.toLowerCase().replace(/[^a-z0-9-]/g, "-");
-      return `${this.projectRoot}/stories/${parentSlug}/${slug}`;
+      return `${this.projectRoot}/stories/${ticket.parentName}/${ticket.name}`;
     }
-    return `${this.projectRoot}/stories/${slug}`;
+    return `${this.projectRoot}/stories/${ticket.name}`;
   }
 
   /**
