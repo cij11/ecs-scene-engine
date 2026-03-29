@@ -33,8 +33,8 @@ export const Demo = {
       // --- Dynamic sphere bodies ---
       const bodies: RAPIER.RigidBody[] = [];
       const TARGET_COUNT = 20_000;
-      const INITIAL_BATCH = 500;
-      const GROWTH_BATCH = 200;
+      const INITIAL_BATCH = 5000;
+      const GROWTH_BATCH = 5000;
       const MIN_FPS = 20;
 
       function spawnBatch(count: number) {

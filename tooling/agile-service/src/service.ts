@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import { execSync } from "node:child_process";
 import type { Ticket, ExitCriteriaResult, Sprint, VelocityEntry } from "./types.js";
+import { ticketNameFromTree, parseTicketName } from "./types.js";
 import type { Repository } from "./repository.js";
 import { exitRefinement, exitReview, exitDone } from "./exit-criteria.js";
 
@@ -15,20 +16,33 @@ export class Service {
   createTicket(type: "feat" | "bugfix" | "task", title: string, parentName?: string): Ticket {
     this.repo.ensureDirectories();
 
-    let name: string;
+    let tree: number[];
     if (parentName) {
-      const subNum = this.repo.getNextSubtaskNumber(parentName);
-      name = `${parentName}-${subNum}`;
+      const parentParsed = parseTicketName(parentName);
+      if (!parentParsed) {
+        throw new Error(`Invalid parent ticket name: "${parentName}"`);
+      }
+      const nextSub = this.repo.getNextSubtaskNumber(parentName);
+      tree = [...parentParsed.tree, nextSub];
     } else {
-      const num = this.repo.getNextTicketNumber(type);
-      name = `${type}-ESE-${num}`;
+      const num = this.repo.getNextTicketNumber();
+      tree = [num];
     }
+
+    const name = ticketNameFromTree(type, tree);
+    const stub = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 50);
 
     const ticket: Ticket = {
       id: this.repo.generateId(),
       name,
       type,
       title,
+      stub,
+      tree,
       status: "refinement",
       description: "",
       acceptanceCriteria: "",
@@ -648,23 +662,32 @@ export class Service {
     }
 
     // Generate new top-level name
-    const num = this.repo.getNextTicketNumber(ticket.type);
-    const newName = `${ticket.type}-ESE-${num}`;
+    const num = this.repo.getNextTicketNumber();
+    const newTree = [num];
+    const newName = ticketNameFromTree(ticket.type, newTree);
 
     // Update ticket (old file removed by saveTicket)
     const oldName = ticket.name;
     ticket.name = newName;
+    ticket.tree = newTree;
     ticket.title = ticket.title.replace(subtaskName, newName);
     ticket.parentName = null;
     this.repo.saveTicket(ticket);
 
     // Update parent's subtask list
-    const parentMatch = subtaskName.match(/^((?:feat|bugfix|task)-ESE-\d{4})-\d{2}$/);
-    if (parentMatch) {
-      const parent = this.repo.loadTicketByName(parentMatch[1]!);
-      if (parent) {
-        parent.subtasks = parent.subtasks.filter((s) => s !== subtaskName);
-        this.repo.saveTicket(parent);
+    if (ticket.parentName !== null || oldName !== newName) {
+      const parentParsed = parseTicketName(subtaskName);
+      if (parentParsed && parentParsed.tree.length > 1) {
+        const parentTree = parentParsed.tree.slice(0, -1);
+        const parentTicketName = ticketNameFromTree(
+          parseTicketName(subtaskName)!.type,
+          parentTree,
+        );
+        const parent = this.repo.loadTicketByName(parentTicketName);
+        if (parent) {
+          parent.subtasks = parent.subtasks.filter((s) => s !== subtaskName);
+          this.repo.saveTicket(parent);
+        }
       }
     }
 
@@ -672,13 +695,18 @@ export class Service {
     const allTickets = this.repo.loadAllTickets();
     for (const child of allTickets) {
       if (child.parentName === oldName) {
-        const subNum = child.name.split("-").pop()!;
-        const newChildName = `${newName}-${subNum}`;
+        const childParsed = parseTicketName(child.name);
+        if (childParsed && childParsed.tree.length > 1) {
+          const childSubNum = childParsed.tree[childParsed.tree.length - 1]!;
+          const newChildTree = [...newTree, childSubNum];
+          const newChildName = ticketNameFromTree(child.type, newChildTree);
 
-        child.name = newChildName;
-        child.parentName = newName;
-        child.title = child.title.replace(child.name, newChildName);
-        this.repo.saveTicket(child);
+          child.name = newChildName;
+          child.tree = newChildTree;
+          child.parentName = newName;
+          child.title = child.title.replace(child.name, newChildName);
+          this.repo.saveTicket(child);
+        }
       }
     }
 

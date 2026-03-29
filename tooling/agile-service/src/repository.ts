@@ -11,6 +11,7 @@ import type {
   StatusesConfig,
   Sprint,
 } from "./types.js";
+import { ticketFilename as buildTicketFilename, parseTicketName } from "./types.js";
 
 export class Repository {
   private readonly dataDir: string;
@@ -57,16 +58,7 @@ export class Repository {
   }
 
   ticketFilename(ticket: Ticket): string {
-    const slug = this.slugify(ticket.title);
-    return slug ? `${ticket.name}-${slug}.json` : `${ticket.name}.json`;
-  }
-
-  private slugify(title: string): string {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 50);
+    return buildTicketFilename(ticket.type, ticket.tree);
   }
 
   saveTicket(ticket: Ticket): void {
@@ -93,29 +85,13 @@ export class Repository {
 
   loadTicketByName(name: string): Ticket | null {
     if (!fs.existsSync(this.ticketsDir)) return null;
-    for (const f of fs.readdirSync(this.ticketsDir)) {
-      if (!f.endsWith(".json")) continue;
-      // Match: name-slug.json or name.json, but NOT name-01-slug.json (subtask)
-      if (f === `${name}.json` || this.filenameMatchesName(f, name)) {
-        const content = fs.readFileSync(
-          path.join(this.ticketsDir, f),
-          "utf-8",
-        );
-        return JSON.parse(content) as Ticket;
-      }
+    const target = `${name}.json`;
+    const filePath = path.join(this.ticketsDir, target);
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, "utf-8");
+      return JSON.parse(content) as Ticket;
     }
     return null;
-  }
-
-  private filenameMatchesName(filename: string, name: string): boolean {
-    // filename is e.g. "task-ESE-0001-some-slug.json"
-    // name is e.g. "task-ESE-0001"
-    // Must match the name prefix followed by a slug (lowercase letter), not a subtask number (digit)
-    const withoutExt = filename.replace(/\.json$/, "");
-    if (!withoutExt.startsWith(`${name}-`)) return false;
-    const rest = withoutExt.slice(name.length + 1);
-    // Slug starts with a letter; subtask number starts with a digit
-    return rest.length > 0 && /^[a-z]/.test(rest);
   }
 
   loadAllTickets(): Ticket[] {
@@ -151,12 +127,9 @@ export class Repository {
 
   private removeTicketFileByName(name: string): void {
     if (!fs.existsSync(this.ticketsDir)) return;
-    for (const f of fs.readdirSync(this.ticketsDir)) {
-      if (!f.endsWith(".json")) continue;
-      if (f === `${name}.json` || this.filenameMatchesName(f, name)) {
-        fs.unlinkSync(path.join(this.ticketsDir, f));
-        return;
-      }
+    const filePath = path.join(this.ticketsDir, `${name}.json`);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
     }
   }
 
@@ -239,32 +212,37 @@ export class Repository {
 
   // --- Next ticket number ---
 
-  getNextTicketNumber(type: string): string {
+  getNextTicketNumber(): number {
     const tickets = this.loadAllTickets();
     const topLevelNumbers = tickets
       .map((t) => {
-        const match = t.name.match(/^(?:feat|bugfix|task)-ESE-(\d{4})$/);
-        return match ? parseInt(match[1]!, 10) : 0;
+        const parsed = parseTicketName(t.name);
+        return parsed && parsed.tree.length === 1 ? parsed.tree[0]! : 0;
       })
       .filter((n) => n > 0);
 
-    const next =
-      topLevelNumbers.length > 0 ? Math.max(...topLevelNumbers) + 1 : 1;
-    return String(next).padStart(4, "0");
+    return topLevelNumbers.length > 0 ? Math.max(...topLevelNumbers) + 1 : 1;
   }
 
-  getNextSubtaskNumber(parentName: string): string {
+  getNextSubtaskNumber(parentName: string): number {
     const tickets = this.loadAllTickets();
-    const prefix = `${parentName}-`;
-    const subtaskNumbers = tickets
-      .filter((t) => t.name.startsWith(prefix))
-      .map((t) => {
-        const match = t.name.match(/-(\d{2})$/);
-        return match ? parseInt(match[1]!, 10) : 0;
-      });
+    const parsed = parseTicketName(parentName);
+    if (!parsed) return 0;
+    const parentTree = parsed.tree;
 
-    const next =
-      subtaskNumbers.length > 0 ? Math.max(...subtaskNumbers) + 1 : 1;
-    return String(next).padStart(2, "0");
+    const childNumbers = tickets
+      .map((t) => {
+        const tp = parseTicketName(t.name);
+        if (!tp) return -1;
+        // Must be one level deeper, with matching parent prefix
+        if (tp.tree.length !== parentTree.length + 1) return -1;
+        for (let i = 0; i < parentTree.length; i++) {
+          if (tp.tree[i] !== parentTree[i]) return -1;
+        }
+        return tp.tree[tp.tree.length - 1]!;
+      })
+      .filter((n) => n >= 0);
+
+    return childNumbers.length > 0 ? Math.max(...childNumbers) + 1 : 0;
   }
 }

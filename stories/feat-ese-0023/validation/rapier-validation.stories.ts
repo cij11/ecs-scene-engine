@@ -189,7 +189,7 @@ export const SingleBallDrop = {
     const SAMPLE_INTERVAL = 10;
 
     (async () => {
-      await RAPIER.init();
+
 
       const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
       world.timestep = DT;
@@ -266,7 +266,7 @@ export const TwoBallsStack = {
     const SAMPLE_INTERVAL = 10;
 
     (async () => {
-      await RAPIER.init();
+
 
       const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
       world.timestep = DT;
@@ -371,7 +371,7 @@ export const TenBallsSettle = {
     const NUM_BALLS = 10;
 
     (async () => {
-      await RAPIER.init();
+
 
       const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
       world.timestep = DT;
@@ -468,7 +468,7 @@ export const HundredBallsPile = {
     const NUM_BALLS = 100;
 
     (async () => {
-      await RAPIER.init();
+
 
       const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
       world.timestep = DT;

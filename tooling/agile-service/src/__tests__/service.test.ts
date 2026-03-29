@@ -44,14 +44,16 @@ describe("Service — ticket commands", () => {
     const ticket = service.createTicket("task", "Test ticket");
 
     expect(ticket.id).toBeTruthy();
-    expect(ticket.name).toBe("task-ESE-0001");
+    expect(ticket.name).toBe("task-ESE-1");
     expect(ticket.type).toBe("task");
     expect(ticket.title).toBe("Test ticket");
+    expect(ticket.stub).toBe("test-ticket");
+    expect(ticket.tree).toEqual([1]);
     expect(ticket.status).toBe("refinement");
 
     const loaded = repo.loadTicket(ticket.id);
     expect(loaded).not.toBeNull();
-    expect(repo.loadTicketByName("task-ESE-0001")?.id).toBe(ticket.id);
+    expect(repo.loadTicketByName("task-ESE-1")?.id).toBe(ticket.id);
   });
 
   it("auto-increments ticket numbers", () => {
@@ -59,9 +61,9 @@ describe("Service — ticket commands", () => {
     const t2 = service.createTicket("task", "Second");
     const t3 = service.createTicket("bugfix", "Third");
 
-    expect(t1.name).toBe("feat-ESE-0001");
-    expect(t2.name).toBe("task-ESE-0002");
-    expect(t3.name).toBe("bugfix-ESE-0003");
+    expect(t1.name).toBe("feat-ESE-1");
+    expect(t2.name).toBe("task-ESE-2");
+    expect(t3.name).toBe("bugfix-ESE-3");
   });
 
   it("creates subtasks under a parent and updates parent subtasks array", () => {
@@ -69,13 +71,15 @@ describe("Service — ticket commands", () => {
     const sub1 = service.createTicket("feat", "Sub 1", parent.name);
     const sub2 = service.createTicket("feat", "Sub 2", parent.name);
 
-    expect(sub1.name).toBe("feat-ESE-0001-01");
-    expect(sub2.name).toBe("feat-ESE-0001-02");
-    expect(sub1.parentName).toBe("feat-ESE-0001");
+    expect(sub1.name).toBe("feat-ESE-1-0");
+    expect(sub2.name).toBe("feat-ESE-1-1");
+    expect(sub1.parentName).toBe("feat-ESE-1");
+    expect(sub1.tree).toEqual([1, 0]);
+    expect(sub2.tree).toEqual([1, 1]);
 
     const updatedParent = repo.loadTicket(parent.id)!;
-    expect(updatedParent.subtasks).toContain("feat-ESE-0001-01");
-    expect(updatedParent.subtasks).toContain("feat-ESE-0001-02");
+    expect(updatedParent.subtasks).toContain("feat-ESE-1-0");
+    expect(updatedParent.subtasks).toContain("feat-ESE-1-1");
   });
 
   it("transitions ticket status", () => {
@@ -90,7 +94,7 @@ describe("Service — ticket commands", () => {
 
   it("rejects invalid status", () => {
     service.createTicket("task", "Bad status");
-    expect(() => service.transitionTicket("task-ESE-0001", "invalid", "test")).toThrow(
+    expect(() => service.transitionTicket("task-ESE-1", "invalid", "test")).toThrow(
       "Invalid status",
     );
   });

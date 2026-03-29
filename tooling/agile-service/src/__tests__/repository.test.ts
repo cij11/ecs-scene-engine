@@ -22,9 +22,11 @@ describe("Repository", () => {
     it("saves and loads a ticket", () => {
       const ticket = {
         id: repo.generateId(),
-        name: "task-ESE-0001",
+        name: "task-ESE-1",
         type: "task" as const,
         title: "Test ticket",
+        stub: "test-ticket",
+        tree: [1],
         status: "draft",
         description: "",
         acceptanceCriteria: "",
@@ -51,7 +53,7 @@ describe("Repository", () => {
 
       expect(loaded).not.toBeNull();
       expect(loaded!.id).toBe(ticket.id);
-      expect(loaded!.name).toBe("task-ESE-0001");
+      expect(loaded!.name).toBe("task-ESE-1");
       expect(loaded!.size).toBe(3);
     });
 
@@ -63,9 +65,11 @@ describe("Repository", () => {
       for (let i = 0; i < 3; i++) {
         repo.saveTicket({
           id: repo.generateId(),
-          name: `task-ESE-000${i + 1}`,
+          name: `task-ESE-${i + 1}`,
           type: "task",
           title: `Ticket ${i + 1}`,
+          stub: `ticket-${i + 1}`,
+          tree: [i + 1],
           status: "draft",
           description: "",
           acceptanceCriteria: "",
@@ -95,9 +99,11 @@ describe("Repository", () => {
       const id = repo.generateId();
       repo.saveTicket({
         id,
-        name: "task-ESE-0001",
+        name: "task-ESE-1",
         type: "task",
         title: "Delete me",
+        stub: "delete-me",
+        tree: [1],
         status: "draft",
         description: "",
         acceptanceCriteria: "",
@@ -189,9 +195,10 @@ describe("Repository", () => {
   });
 
   describe("ticket numbering", () => {
-    function saveStub(name: string, title = "stub") {
+    function saveStub(name: string, tree: number[], title = "stub") {
       repo.saveTicket({
-        id: repo.generateId(), name, type: "task", title, status: "inRefinement",
+        id: repo.generateId(), name, type: "task", title, stub: "stub", tree,
+        status: "inRefinement",
         description: "", acceptanceCriteria: "", demoDeliverable: "",
         testingScenarios: "", testingNotes: "", size: null, sizeLabel: null,
         subtasks: [], stakeholderUnderstanding: "", demoAccepted: false,
@@ -201,23 +208,23 @@ describe("Repository", () => {
     }
 
     it("generates sequential ticket numbers", () => {
-      saveStub("task-ESE-0001");
-      saveStub("feat-ESE-0003");
+      saveStub("task-ESE-1", [1]);
+      saveStub("feat-ESE-3", [3]);
 
-      expect(repo.getNextTicketNumber("task")).toBe("0004");
+      expect(repo.getNextTicketNumber()).toBe(4);
     });
 
     it("generates subtask numbers", () => {
-      saveStub("task-ESE-0001");
-      saveStub("task-ESE-0001-01");
-      saveStub("task-ESE-0001-02");
+      saveStub("task-ESE-1", [1]);
+      saveStub("task-ESE-1-0", [1, 0]);
+      saveStub("task-ESE-1-1", [1, 1]);
 
-      expect(repo.getNextSubtaskNumber("task-ESE-0001")).toBe("03");
+      expect(repo.getNextSubtaskNumber("task-ESE-1")).toBe(2);
     });
 
-    it("starts at 01 for first subtask", () => {
-      saveStub("task-ESE-0001");
-      expect(repo.getNextSubtaskNumber("task-ESE-0001")).toBe("01");
+    it("starts at 0 for first subtask", () => {
+      saveStub("task-ESE-1", [1]);
+      expect(repo.getNextSubtaskNumber("task-ESE-1")).toBe(0);
     });
   });
 
