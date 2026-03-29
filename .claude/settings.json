@@ -12,7 +12,14 @@
       "Read(//private/tmp/claude-501/-Users-chrisjolly-Projects-ecs-scene-engine/cfc8683d-3a03-4657-8d6a-bbaa8d2aed09/tasks/**)",
       "Bash(grep -rn \"World\\\\|RigidBody\\\\|Collider\" node_modules/@dimforge/rapier3d-deterministic/dynamics/*.d.ts)",
       "Bash(grep -rn \"class World\" node_modules/@dimforge/rapier3d-deterministic/**/*.d.ts)",
-      "Bash(npx tsx -e \":*)"
+      "Bash(npx tsx -e \":*)",
+      "Bash(find stories:*)",
+      "Bash(find node_modules/@dimforge/rapier3d-deterministic -name *.js)",
+      "Bash(ls -d */)",
+      "Bash(while read:*)",
+      "Bash(MEM=\"/Users/chrisjolly/.claude/projects/-Users-chrisjolly-Projects-ecs-scene-engine/memory\")",
+      "Bash(rm -f \"$MEM/feedback_sprint_steps.md\" \"$MEM/feedback_sprint_coach.md\" \"$MEM/feedback_ticket_filenames.md\" \"$MEM/feedback_review_on_transition.md\" \"$MEM/feedback_sprint_dir_on_dev.md\" \"$MEM/feedback_review_then_demo.md\" \"$MEM/feedback_stakeholder_show_ticket.md\" \"$MEM/project_sprint_9_progress.md\" \"$MEM/project_handoff_summary.md\")",
+      "Bash(node -e \"const p=require\\(''''./package.json''''\\); Object.keys\\(p.scripts\\).forEach\\(k=>console.log\\(k\\)\\)\")"
     ]
   },
   "hooks": {

@@ -1,7 +1,0 @@
-{
-  "command": "npx tsx tooling/capture-page.ts hall-of-mirrors.html",
-  "artifactType": "video",
-  "artifacts": [
-    "hall-of-mirrors-screenshot.png"
-  ]
-}

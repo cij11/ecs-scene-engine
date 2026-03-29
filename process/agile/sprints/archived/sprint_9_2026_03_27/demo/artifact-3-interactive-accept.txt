@@ -1,5 +1,0 @@
-
-> ecs-scene-engine@1.0.0 agile
-> npx tsx tooling/agile-service/src/cli.ts ticket accept task-ESE-0010
-
-Error: ticket accept requires an interactive terminal.

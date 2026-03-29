@@ -1,1 +1,0 @@
-{"command":"npx vitest run engine/tilemap/density.test.ts","artifactType":"terminal","artifacts":["artifact-density.txt"]}

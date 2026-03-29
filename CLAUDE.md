@@ -10,28 +10,27 @@ This project uses a file-based locking system for coordinating work across multi
 
 **After writing files:** Remove your lock file from `process/collaboration/locks/`.
 
-## Ticket Status Changes
+## Stories
 
-**NEVER manually edit ticket JSON files in `process/agile/tickets/`.** These are managed by the agile service.
+Work is organised as **Storybook stories**. Each story is an interface between two agents in a chain of command.
 
-**All status transitions must go through:**
+- **Top-level stories** = human:agent interface (top-level goals)
+- **Substories** = agent:sub-agent interface (delegated subgoals)
+- Stories live in `stories/NNNN/` with substories in `stories/NNNN/NNNN/`
+- 4-digit zero-padded numbering for sorting
+- Each story has: `goal` (what it achieves) and `status` (refining/dev/review/done)
 
-```
-npm run agile -- ticket status <ticket> <new_status>
-```
+When a task is too complex for one agent, create substories and delegate to sub-agents. Sub-agents can work in parallel.
 
-The legacy `npm run ticket:status` still works (it delegates to the agile service). The service enforces exit criteria (CI, field validation, demo checks) and writes to the audit log. Run `npm run agile -- ticket validate` to check consistency.
+## Review
 
-## Code Review
+All stories require review before done:
 
-**NEVER create a review.md file without having actually reviewed the code.** When a ticket is in `inReview` status, you must:
+1. **Code review** — read the code, check against the story goal, assess quality
+2. **Test output** — tests must pass, results captured
+3. **Visual review** — for anything human-facing, screenshots reviewed by a context-free sub-agent with no source code access
 
-1. Read the changed/created source files
-2. Check them against the ticket's acceptance criteria
-3. Assess code quality, correctness, and test coverage
-4. Only then write review.md with your findings
-
-review.md must contain an honest assessment. If there are critical or severe issues, they must be listed — do not create a clean review.md to bypass the exit criteria.
+Never create a review without actually reviewing. Never rubber-stamp.
 
 ## Testing Strategy
 
@@ -42,15 +41,8 @@ During development, validate programmatically first:
 - Emit logging for complex scenarios, with asserts to validate
 - Only when the data indicates success, move on to visual testing
 
-Visual testing is the primary mechanism for **demo validation**, not dev validation. Don't rely on screenshots to debug rendering issues — use console logging, entity counts, position asserts, and query results first. Use visual checks to get perspective or get out of a rut, but don't depend on them as the primary development tool.
+Visual testing validates **human-facing output**, not internal logic.
 
-## Agile Process
+## CI
 
-See `process/agile/agile.md` for the full process. Key points:
-
-- Tickets follow the status flow defined in agile.md
-- All tickets require a Demo Deliverable and go through the demo validation process
-- All transitions are enforced by the agile service exit criteria (`npm run agile -- <command>`)
-- Demo validation must use a context-free agent: `npm run agile -- ticket validate-demo <name>`
-- `ticket accept` requires interactive terminal confirmation (human only)
-- CI must pass before marking tickets done (`npm run ci`)
+CI must pass: `npm run ci` (prettier + eslint + typecheck + vitest)

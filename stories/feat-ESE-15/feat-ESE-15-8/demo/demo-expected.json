@@ -1,4 +1,0 @@
-{
-  "description": "Screenshot showing a 3D scene with a mirror quad containing recursive reflections. The main camera sees a yellow sphere, blue box, and a green mirror quad. Inside the mirror, the same scene is visible including a smaller mirror showing the scene again — at least two levels of recursion.",
-  "durationMs": 10000
-}

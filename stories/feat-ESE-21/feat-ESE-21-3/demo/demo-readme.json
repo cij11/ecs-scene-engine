@@ -1,1 +1,0 @@
-{"command":"npx vitest run engine/tilemap/polygon.test.ts","artifactType":"terminal","artifacts":["artifact-polygon.txt"]}

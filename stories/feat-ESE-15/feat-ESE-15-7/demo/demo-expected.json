@@ -1,4 +1,0 @@
-{
-  "description": "Screenshot showing a 3D scene with a RenderQuad displaying a live feed from another camera. The main perspective camera sees a yellow sphere (sun), blue box (ship), and a TV quad showing a top-down orthographic view of the same objects on a green background.",
-  "durationMs": 10000
-}

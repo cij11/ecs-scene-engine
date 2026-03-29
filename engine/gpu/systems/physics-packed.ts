@@ -112,6 +112,7 @@ struct Params {
 @group(0) @binding(3) var<storage, read> pos: array<vec4f>;
 @group(0) @binding(4) var<storage, read> vel: array<vec4f>;
 @group(0) @binding(5) var<storage, read_write> impulse: array<vec4f>;
+@group(0) @binding(6) var<storage, read_write> separation: array<vec4f>;
 
 fn gridIndex(x: i32, y: i32, z: i32) -> u32 {
   let gs = i32(params.gridSize);
@@ -139,6 +140,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
   let gz = i32(floor((pA.z - params.gridOrigin) / params.cellSize));
 
   var accImpulse = vec3f(0.0, 0.0, 0.0);
+  var accSeparation = vec3f(0.0, 0.0, 0.0);
 
   // Check 27 neighboring cells
   for (var dx = -1; dx <= 1; dx++) {
@@ -171,24 +173,32 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
             let relVel = dot(vA - vB, normal);
 
             if (relVel < 0.0) {
-              // Impulse magnitude (equal mass assumption)
-              let j = -(1.0 + rest) * relVel * 0.5;
+              // Velocity impulse — conservative, no restitution bounce
+              let j = -relVel * 0.5;
               accImpulse = accImpulse + normal * j;
             }
 
-            // Position correction — gentle push proportional to overlap
-            accImpulse = accImpulse + normal * overlap * 2.0;
+            // Position correction — very gentle push to prevent overlap
+            accSeparation = accSeparation + normal * overlap * 0.25;
           }
         }
       }
     }
   }
 
-  // Accumulate into impulse buffer (additive — handles multiple collisions)
+  // Velocity impulse — accumulated, applied as velocity change in integrate
   impulse[eid] = vec4f(
     impulse[eid].x + accImpulse.x,
     impulse[eid].y + accImpulse.y,
     impulse[eid].z + accImpulse.z,
+    0.0
+  );
+
+  // Position separation — accumulated, applied as position offset in integrate (NOT velocity)
+  separation[eid] = vec4f(
+    separation[eid].x + accSeparation.x,
+    separation[eid].y + accSeparation.y,
+    separation[eid].z + accSeparation.z,
     0.0
   );
 }
@@ -212,6 +222,7 @@ struct Params {
 @group(0) @binding(3) var<storage, read_write> vel: array<vec4f>;
 @group(0) @binding(4) var<storage, read_write> force: array<vec4f>;
 @group(0) @binding(5) var<storage, read_write> impulse: array<vec4f>;
+@group(0) @binding(6) var<storage, read_write> separation: array<vec4f>;
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) id: vec3u) {
@@ -222,6 +233,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
   let v = vel[eid];
   let f = force[eid];
   let imp = impulse[eid];
+  let sep = separation[eid];
 
   // Preserve packed w components
   let radius = p.w;
@@ -232,25 +244,30 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
   var vy = v.y + (f.y + params.gravity) * params.dt;
   var vz = v.z + f.z * params.dt;
 
-  // Apply accumulated impulse (velocity change + separation)
+  // Apply accumulated velocity impulse ONLY (no position correction here)
   vx = vx + imp.x;
   vy = vy + imp.y;
   vz = vz + imp.z;
 
-  // Clear consumed force and impulse
+  // Clear consumed force, impulse, and separation
   force[eid] = vec4f(0.0, 0.0, 0.0, f.w);
   impulse[eid] = vec4f(0.0, 0.0, 0.0, 0.0);
+  separation[eid] = vec4f(0.0, 0.0, 0.0, 0.0);
 
-  // Velocity damping — per sub-step, so effective per-frame damping is pow(d, substeps)
-  // 0.999^4 ≈ 0.996 per frame → ~22% loss per second at 60fps
-  vx = vx * 0.999;
-  vy = vy * 0.999;
-  vz = vz * 0.999;
+  // Velocity damping — gentle, per sub-step
+  vx = vx * 0.995;
+  vy = vy * 0.995;
+  vz = vz * 0.995;
 
   // Integrate position
   var newX = p.x + vx * params.dt;
   var newY = p.y + vy * params.dt;
   var newZ = p.z + vz * params.dt;
+
+  // Apply position separation DIRECTLY as position offset (no energy injection)
+  newX = newX + sep.x;
+  newY = newY + sep.y;
+  newZ = newZ + sep.z;
 
   // Bounce off bounds (box constraint) with dampening
   let dampening = 0.5;
